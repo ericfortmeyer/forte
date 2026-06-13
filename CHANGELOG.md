@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file.
 This project uses [Semantic Versioning](https://semver.org/)
 
+## 0.1.7 (2026-06-13)
+
+### Fix
+
+- **release-action**: add version to binary
+
 ## 0.1.6 (2026-06-13)
 
 ### Fix
