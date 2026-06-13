@@ -4,7 +4,10 @@ on:
   release:
     types:
       - published
-      - prereleased
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
   build:
