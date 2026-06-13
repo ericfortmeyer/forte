@@ -1,6 +1,20 @@
-# Forte
+<!-- markdownlint-disable MD033-->
+<h1 align="center">Forte</h1>
+<p align="center">
+  Focused deploy tool that enforces FHS conventions so deployments are predictable.
+</p>
 
-Focused deploy tool that enforces FHS conventions so deployments are predictable.
+<p align="center">
+  <a href="https://github.com/ericfortmeyer/forte/actions/workflows/push.yml">
+    <img src="https://github.com/ericfortmeyer/forte/actions/workflows/push.yml/badge.svg" alt="Quality Checks">
+  </a>
+  <a href="https://github.com/ericfortmeyer/forte/actions/workflows/release.yml">
+    <img src="https://github.com/ericfortmeyer/forte/actions/workflows/release.yml/badge.svg?event=release" alt="Release">
+  </a>
+  <a href="https://github.com/ericfortmeyer/forte/actions/workflows/pr.yml">
+    <img src="https://github.com/ericfortmeyer/forte/actions/workflows/pr.yml/badge.svg" alt="Integration Tests">
+  </a>
+</p>
 
 ## Why Forte
 
