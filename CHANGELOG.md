@@ -3,6 +3,12 @@
 All notable changes to this project are documented in this file.
 This project uses [Semantic Versioning](https://semver.org/)
 
+## 0.1.1 (2026-06-13)
+
+### Fix
+
+- **release-action**: adjust ci permissions and release process (#4)
+
 ## 0.1.0 (2026-06-12)
 
 ### Feat
