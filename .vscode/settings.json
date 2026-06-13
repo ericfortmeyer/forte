@@ -1,0 +1,13 @@
+{
+    "makefile.configureOnOpen": false,
+    "[bats]": {
+        "editor.defaultFormatter": "foxundermoon.shell-format",
+        "editor.formatOnSave": true
+    },
+    "shellformat.path": "shfmt",
+    "shellformat.args": [
+        "-i",
+        "4",
+        "-bn"
+    ]
+}
