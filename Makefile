@@ -1,6 +1,6 @@
 .PHONY: build run clean test fmt vet lint docker-build docker-integration-test
 
-VERSION = $(shell grep -oE 'version = "[^"]+"' .cz.toml | cut -d'"' -f2)
+VERSION = $(shell grep -oE 'version = "[^"]+"' .cz.toml | cut -d'"' -f2 || echo "0.0.0")
 
 build:
 	go build -ldflags "-X github.com/ericfortmeyer/forte/internal/version.version=$(VERSION)" -o bin/forte ./cmd/forte

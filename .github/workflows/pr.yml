@@ -17,6 +17,8 @@ jobs:
 
       - name: Build forte
         run: make build
+        env:
+          GOFLAGS: -buildvcs=false
 
       - name: Run integration tests
         run: bats -r ./integration_tests
