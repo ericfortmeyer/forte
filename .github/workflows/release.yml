@@ -1,7 +1,7 @@
 name: Release
 on:
   release:
-    types: [created, prereleased, published]
+    types: [published]
 
 permissions:
   contents: write
@@ -23,7 +23,7 @@ jobs:
           GOOS: linux
           GOARCH: ${{ matrix.arch }}
         run: |
-          go build -o forte-linux-${{ matrix.arch }} ./cmd/forte
+          go build -ldflags "-X github.com/ericfortmeyer/forte/internal/version.version=$(grep -oE 'version = "[^"]+"' .cz.toml | cut -d'"' -f2 || echo "0.0.0")" -o forte-linux-${{ matrix.arch }} ./cmd/forte
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v3
