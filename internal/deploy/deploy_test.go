@@ -14,7 +14,7 @@ func TestPathResolverConfigDir(t *testing.T) {
 	fakeCfgDir := "/some/fake/dir"
 	fakeAppName := "fake_app_name"
 	expected := filepath.Join(fakeCfgDir, fakeAppName)
-	sut := NewPathResolver(fakeCfgDir, "")
+	sut := NewPathResolver(fakeCfgDir, "", "")
 
 	// When
 	actual := sut.ConfigDir(fakeAppName)
@@ -30,10 +30,26 @@ func TestPathResolverWebServiceDir(t *testing.T) {
 	fakeSvcDir := "/some/fake/dir"
 	fakeAppName := "fake_app_name"
 	expected := filepath.Join(fakeSvcDir, fakeAppName)
-	sut := NewPathResolver("", fakeSvcDir)
+	sut := NewPathResolver("", fakeSvcDir, "")
 
 	// When
 	actual := sut.WebServiceDir(fakeAppName)
+
+	// Then
+	if actual != expected {
+		t.Errorf("Expected %s but got %s", expected, actual)
+	}
+}
+
+func TestPathResolverServiceAssetDir(t *testing.T) {
+	// Given
+	fakeSvcAssetDir := "/some/fake/dir"
+	fakeAppName := "fake_app_name"
+	expected := filepath.Join(fakeSvcAssetDir, fakeAppName)
+	sut := NewPathResolver("", "", fakeSvcAssetDir)
+
+	// When
+	actual := sut.ServiceAssetDir(fakeAppName)
 
 	// Then
 	if actual != expected {
@@ -47,7 +63,7 @@ func TestRootResolverConfigDir(t *testing.T) {
 	fakeCfgDir := "/some/fake/dir"
 	fakeAppName := "fake_app_name"
 	expected := fakeRootDir + fakeCfgDir + "/" + fakeAppName
-	p := NewPathResolver(fakeCfgDir, "")
+	p := NewPathResolver(fakeCfgDir, "", "")
 	sut := NewRootResolver(fakeRootDir)
 
 	// When
@@ -65,11 +81,29 @@ func TestRootResolverWebServiceDir(t *testing.T) {
 	fakeSvcDir := "/some/fake/dir"
 	fakeAppName := "fake_app_name"
 	expected := fakeRootDir + fakeSvcDir + "/" + fakeAppName
-	p := NewPathResolver("", fakeSvcDir)
+	p := NewPathResolver("", fakeSvcDir, "")
 	sut := NewRootResolver(fakeRootDir)
 
 	// When
 	actual := sut.WebServiceDir(fakeAppName, p)
+
+	// Then
+	if actual != expected {
+		t.Errorf("Expected %s but got %s", expected, actual)
+	}
+}
+
+func TestRootResolverServiceAssetDir(t *testing.T) {
+	// Given
+	fakeRootDir := "/chroot/here"
+	fakeSvcAssetDir := "/some/fake/dir"
+	fakeAppName := "fake_app_name"
+	expected := fakeRootDir + fakeSvcAssetDir + "/" + fakeAppName
+	p := NewPathResolver("", "", fakeSvcAssetDir)
+	sut := NewRootResolver(fakeRootDir)
+
+	// When
+	actual := sut.ServiceAssetDir(fakeAppName, p)
 
 	// Then
 	if actual != expected {
@@ -154,7 +188,7 @@ func TestDeployInstallsService(t *testing.T) {
 		DestRoot:   rootDir,
 	}
 
-	p := NewPathResolver(fhs.ConfigDest(), fhs.WebSvcDest())
+	p := NewPathResolver(fhs.ConfigDest(), fhs.WebSvcDest(), fhs.SvcAssetDest())
 	r := NewRootResolver(rootDir)
 	destDir := r.WebServiceDir(fakeAppName, p)
 
@@ -175,6 +209,54 @@ func TestDeployInstallsService(t *testing.T) {
 	}
 }
 
+func TestDeployInstallsServiceAssets(t *testing.T) {
+	rootDir := t.TempDir()
+	fakeAppName := "fake_app"
+	mockChown := func(filename string, uid, gid int) error { return nil }
+
+	deployment := Deployment{
+		Src:  filepath.Join("testdata", fakeAppName+DeploymentTypeSeparator+string(DeploymentTypeAssets)),
+		Type: DeploymentTypeAssets,
+	}
+
+	cfg := DeployConfig{
+		AppName:    fakeAppName,
+		Deployment: deployment,
+		WebServerUser: &user.User{
+			Uid:      "33",
+			Gid:      "33",
+			Username: "www-data",
+			HomeDir:  "/var/www",
+		},
+		DirPerms:     0750,
+		FilePerms:    0640,
+		ConfigDest:   fhs.ConfigDest(),
+		WebSvcDest:   fhs.WebSvcDest(),
+		SvcAssetDest: fhs.SvcAssetDest(),
+		Chown:        mockChown,
+		DestRoot:     rootDir,
+	}
+
+	p := NewPathResolver(fhs.ConfigDest(), fhs.WebSvcDest(), fhs.SvcAssetDest())
+	r := NewRootResolver(rootDir)
+	destDir := r.ServiceAssetDir(fakeAppName, p)
+
+	// Deploy
+	if err := Deploy(cfg, nil); err != nil {
+		t.Fatalf("Deploy failed: %v", err)
+	}
+
+	// Verify files copied
+	requiredFiles := []string{
+		"app.css",
+	}
+	for _, file := range requiredFiles {
+		if _, err := os.ReadFile(filepath.Join(destDir, file)); err != nil {
+			t.Errorf("missing file: %s", file)
+		}
+	}
+}
+
 func TestResolveSrc(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -184,7 +266,7 @@ func TestResolveSrc(t *testing.T) {
 		wantErr         bool
 	}{
 		{
-			name: "config version exists",
+			name: "only config version exists",
 			setup: func(t *testing.T, srcRoot string) {
 				configPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeConfig))
 				if err := os.MkdirAll(configPath, 0755); err != nil {
@@ -193,6 +275,18 @@ func TestResolveSrc(t *testing.T) {
 			},
 			appName:         "myapp",
 			wantDeployments: []DeploymentType{DeploymentTypeConfig},
+			wantErr:         false,
+		},
+		{
+			name: "only assets version exists",
+			setup: func(t *testing.T, srcRoot string) {
+				assetsPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeAssets))
+				if err := os.MkdirAll(assetsPath, 0755); err != nil {
+					t.Fatalf("setup failed: %v", err)
+				}
+			},
+			appName:         "myapp",
+			wantDeployments: []DeploymentType{DeploymentTypeAssets},
 			wantErr:         false,
 		},
 		{
@@ -224,7 +318,59 @@ func TestResolveSrc(t *testing.T) {
 			wantErr:         false,
 		},
 		{
-			name: "neither version exists",
+			name: "both assets and service exist",
+			setup: func(t *testing.T, srcRoot string) {
+				servicePath := filepath.Join(srcRoot, "myapp")
+				assetsPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeAssets))
+				if err := os.MkdirAll(servicePath, 0755); err != nil {
+					t.Fatalf("setup failed: %v", err)
+				}
+				if err := os.MkdirAll(assetsPath, 0755); err != nil {
+					t.Fatalf("setup failed: %v", err)
+				}
+			},
+			appName:         "myapp",
+			wantDeployments: []DeploymentType{DeploymentTypeAssets, DeploymentTypeService},
+			wantErr:         false,
+		},
+		{
+			name: "both assets and config exist",
+			setup: func(t *testing.T, srcRoot string) {
+				assetsPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeAssets))
+				configPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeConfig))
+				if err := os.MkdirAll(assetsPath, 0755); err != nil {
+					t.Fatalf("setup failed: %v", err)
+				}
+				if err := os.MkdirAll(configPath, 0755); err != nil {
+					t.Fatalf("setup failed: %v", err)
+				}
+			},
+			appName:         "myapp",
+			wantDeployments: []DeploymentType{DeploymentTypeConfig, DeploymentTypeAssets},
+			wantErr:         false,
+		},
+		{
+			name: "assets, service, and config exist",
+			setup: func(t *testing.T, srcRoot string) {
+				servicePath := filepath.Join(srcRoot, "myapp")
+				assetsPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeAssets))
+				configPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeConfig))
+				if err := os.MkdirAll(servicePath, 0755); err != nil {
+					t.Fatalf("setup failed: %v", err)
+				}
+				if err := os.MkdirAll(assetsPath, 0755); err != nil {
+					t.Fatalf("setup failed: %v", err)
+				}
+				if err := os.MkdirAll(configPath, 0755); err != nil {
+					t.Fatalf("setup failed: %v", err)
+				}
+			},
+			appName:         "myapp",
+			wantDeployments: []DeploymentType{DeploymentTypeConfig, DeploymentTypeAssets, DeploymentTypeService},
+			wantErr:         false,
+		},
+		{
+			name: "no version exists",
 			setup: func(t *testing.T, srcRoot string) {
 				// create nothing
 			},
@@ -265,9 +411,12 @@ func TestResolveSrc(t *testing.T) {
 
 				// Verify Src matches expected pattern
 				var expectedSrc string
-				if deployment.Type == DeploymentTypeConfig {
+				switch deployment.Type {
+				case DeploymentTypeConfig:
 					expectedSrc = filepath.Join(srcRoot, tt.appName+DeploymentTypeSeparator+string(DeploymentTypeConfig))
-				} else {
+				case DeploymentTypeAssets:
+					expectedSrc = filepath.Join(srcRoot, tt.appName+DeploymentTypeSeparator+string(DeploymentTypeAssets))
+				default:
 					expectedSrc = filepath.Join(srcRoot, tt.appName)
 				}
 				if deployment.Src != expectedSrc {

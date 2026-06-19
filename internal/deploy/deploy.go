@@ -14,12 +14,14 @@ const (
 	_ = iota
 	ConfigDeployment
 	ServiceDeployment
+	ServiceAssetDeployment
 )
 
 const (
 	DeploymentTypeSeparator                = "-"
 	DeploymentTypeConfig    DeploymentType = "config"
 	DeploymentTypeService   DeploymentType = "service"
+	DeploymentTypeAssets    DeploymentType = "assets"
 	defaultFileOwner                       = "root"
 	defaultDirOwner                        = "root"
 )
@@ -45,6 +47,7 @@ type DeployConfig struct {
 	DestRoot      string
 	ConfigDest    string
 	WebSvcDest    string
+	SvcAssetDest  string
 	Chown         ChownFunc
 }
 
@@ -71,8 +74,9 @@ type RootResolver struct {
 }
 
 type PathResolver struct {
-	configDir string
-	webSrvDir string
+	configDir   string
+	webSrvDir   string
+	srvAssetDir string
 }
 
 func (r *RootResolver) ConfigDir(appName string, p *PathResolver) string {
@@ -83,6 +87,10 @@ func (r *RootResolver) WebServiceDir(appName string, p *PathResolver) string {
 	return filepath.Join(r.rootDir, p.WebServiceDir(appName))
 }
 
+func (r *RootResolver) ServiceAssetDir(appName string, p *PathResolver) string {
+	return filepath.Join(r.rootDir, p.ServiceAssetDir(appName))
+}
+
 func (p *PathResolver) ConfigDir(appName string) string {
 	return filepath.Join(p.configDir, appName)
 }
@@ -91,17 +99,21 @@ func (p *PathResolver) WebServiceDir(appName string) string {
 	return filepath.Join(p.webSrvDir, appName)
 }
 
+func (p *PathResolver) ServiceAssetDir(appName string) string {
+	return filepath.Join(p.srvAssetDir, appName)
+}
+
 func NewRootResolver(rootDir string) *RootResolver {
 	return &RootResolver{rootDir: rootDir}
 }
 
-func NewPathResolver(cfgDir string, webSrvDir string) *PathResolver {
-	return &PathResolver{configDir: cfgDir, webSrvDir: webSrvDir}
+func NewPathResolver(cfgDir, webSrvDir, srvAssetDir string) *PathResolver {
+	return &PathResolver{configDir: cfgDir, webSrvDir: webSrvDir, srvAssetDir: srvAssetDir}
 }
 
 func Deploy(cfg DeployConfig, cleanup CleanupFunc) error {
 	r := NewRootResolver(cfg.DestRoot)
-	p := NewPathResolver(cfg.ConfigDest, cfg.WebSvcDest)
+	p := NewPathResolver(cfg.ConfigDest, cfg.WebSvcDest, cfg.SvcAssetDest)
 
 	switch cfg.Deployment.Type {
 	case DeploymentTypeConfig:
@@ -110,6 +122,10 @@ func Deploy(cfg DeployConfig, cleanup CleanupFunc) error {
 		}
 	case DeploymentTypeService:
 		if svcErr := installWebService(cfg, r, p); svcErr != nil {
+			return svcErr
+		}
+	case DeploymentTypeAssets:
+		if svcErr := installServiceAsset(cfg, r, p); svcErr != nil {
 			return svcErr
 		}
 	}
@@ -128,12 +144,21 @@ func ResolveSrc(srcRoot, appName string) ([]Deployment, error) {
 
 	servicePath := filepath.Join(srcRoot, appName)
 	configPath := filepath.Join(srcRoot, appName+DeploymentTypeSeparator+string(DeploymentTypeConfig))
+	serviceAssetPath := filepath.Join(srcRoot, appName+DeploymentTypeSeparator+string(DeploymentTypeAssets))
 
 	// Check for config deployment
 	if _, err := os.Stat(configPath); err == nil {
 		deployments = append(deployments, Deployment{
 			Src:  configPath,
 			Type: DeploymentTypeConfig,
+		})
+	}
+
+	// Check for service asset deployment
+	if _, err := os.Stat(serviceAssetPath); err == nil {
+		deployments = append(deployments, Deployment{
+			Src:  serviceAssetPath,
+			Type: DeploymentTypeAssets,
 		})
 	}
 
@@ -155,6 +180,33 @@ func ResolveSrc(srcRoot, appName string) ([]Deployment, error) {
 
 func installWebService(cfg DeployConfig, r *RootResolver, p *PathResolver) error {
 	dst := r.WebServiceDir(cfg.AppName, p)
+
+	owners, err := ownersAndGroups(cfg)
+	if err != nil {
+		return err
+	}
+
+	cpCfg := CopyCfg{
+		Src:       cfg.Deployment.Src,
+		Dst:       dst,
+		DirPerms:  cfg.DirPerms,
+		FilePerms: cfg.FilePerms,
+		DirOwner:  owners.DirOwner,
+		DirGroup:  owners.DirGroup,
+		FileOwner: owners.FileOwner,
+		FileGroup: owners.FileGroup,
+		Chown:     cfg.Chown,
+	}
+
+	if err := copyRecursive(cpCfg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func installServiceAsset(cfg DeployConfig, r *RootResolver, p *PathResolver) error {
+	dst := r.ServiceAssetDir(cfg.AppName, p)
 
 	owners, err := ownersAndGroups(cfg)
 	if err != nil {
