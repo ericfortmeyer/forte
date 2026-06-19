@@ -2,8 +2,8 @@ name: Integration Tests
 on:
   pull_request:
     paths:
-      - "*.go"
-      - "*.bats"
+      - "**/*.go"
+      - "**/*.bats"
       - ".github/workflows/pr.yml"
       - "go.mod"
 

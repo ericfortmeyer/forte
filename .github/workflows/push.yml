@@ -2,7 +2,7 @@ name: Quality Checks
 on:
   push:
     paths:
-      - "*.go"
+      - "**/*.go"
       - "go.mod"
       - ".github/workflows/push.yml"
 
