@@ -64,6 +64,7 @@ func main() {
 				DestRoot:      destRoot,
 				ConfigDest:    fhs.ConfigDest(), // TODO: support config file / env var override in future version
 				WebSvcDest:    fhs.WebSvcDest(), // TODO: support config file / env var override in future version
+				SvcAssetDest:  fhs.SvcAssetDest(), // TODO: support config file / env var override in future version
 			}
 
 			if err := deploy.Deploy(cfg, deploy.CleanupProduction); err != nil {

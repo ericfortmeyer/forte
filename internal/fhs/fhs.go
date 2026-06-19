@@ -1,8 +1,9 @@
 package fhs
 
 const (
-	configDest = "/etc"
-	webSvcDest = "/srv"
+	configDest    = "/etc"
+	webSvcDest    = "/srv"
+	svcAssetsDest = "/srv/assets"
 )
 
 func ConfigDest() string {
@@ -11,4 +12,8 @@ func ConfigDest() string {
 
 func WebSvcDest() string {
 	return webSvcDest
+}
+
+func SvcAssetDest() string {
+	return svcAssetsDest
 }
