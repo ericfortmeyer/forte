@@ -42,8 +42,11 @@ Result:
 
 - Application binaries and runtime files → /srv/myapp/
 - Config files → /etc/myapp/
+- **Static assets** → /srv/assets/myapp/
 
-## Minimal API (v0.1.0)
+To deploy assets, place them in `/tmp/myapp-assets` before running `deploy`.
+
+## Minimal API (0.2.0)
 
 Usage:
 
@@ -58,12 +61,13 @@ usage: forte <command> [<args>]
 
 Behavior summary:
 
-- No configuration or flags in v0.1.0.
-- Expected source layout: `/tmp/<app>` and `/tmp/<app>-config`.
+- No configuration or flags in 0.2.0.
+- Expected source layout: `/tmp/<app>`, `/tmp/<app>-config`, and `/tmp/<app>-assets`.
 - Mapping:
-  - `/tmp/<app>`           → `/srv/<app>`
-  - `/tmp/<app>-config`    → `/etc/<app>`
-  - The "-config" suffix on the source directory signals configuration files.
+  - `/tmp/<app>` → `/srv/<app>`
+  - `/tmp/<app>-config` → `/etc/<app>`
+  - `/tmp/<app>-assets` → `/srv/assets/<app>/`
+- The `-config` and `-assets` suffixes on source directories signal configuration and static assets, respectively.
 - Binaries released for amd64 and arm64 as GitHub artifacts.
 
 ## Guarantees and current limitations
@@ -74,7 +78,7 @@ Behavior summary:
   - Files:       root:serviceuser, 0640
 - Known limitations:
   - Permission-only changes in the source are currently ignored if the file contents are unchanged. (Forte will not update permissions in that case.)
-  - No dry-run option in v0.1.0.
+  - No dry-run option in 0.1.0.
   - No automatic cleanup of the source directory.
   - No rollback of partial or failed deployments; partial state may remain on error.
 
@@ -88,8 +92,9 @@ Behavior summary:
 
 Planned items and investigations to address current limitations:
 
+- **✓ Static assets deployment** (v0.2.0) — Assets under `/tmp/<app>-assets` are deployed to `/srv/assets/<app>/`
+- Extract and deploy a tarball (v0.2.0)
 - Add --dry-run and a verbose mode to preview changes without writing.
-- Extract and deploy a tarball
 - Fix permission-only sync behavior (decide whether to treat permission diffs as changes, or offer an explicit flag to sync perms).
 - Implement safe rollback/transactional deploys or an atomic swap strategy to avoid partial state on failure.
 - Optional: cleanup step (configurable) to remove or archive the source after successful deploy.
@@ -101,10 +106,10 @@ Planned items and investigations to address current limitations:
 
 ```zsh
 # build pipeline places artifacts:
-# /tmp/myApp and /tmp/myApp-config
+# /tmp/myApp /tmp/myApp-assets and /tmp/myApp-config
 
 ./bin/forte deploy myApp serviceuser
-# -> /srv/myApp/ and /etc/myApp/
+# -> /srv/myApp/ /srv/assets/myApp and /etc/myApp/
 ```
 
 ## Where Forte puts files — rationale and convention
@@ -116,6 +121,25 @@ Keep web application files grouped under a single, semantically meaningful tree:
 - **Separation of concerns:** Keep runtime assets belonging to the web app next to the app; keep global or shared asset stores distinct only when semantically necessary.
 
 Avoid introducing a top-level /srv/assets/ that mixes different server roles. Splitting assets into a separate top-level path blurs the “what serves this” question and makes role-based policies (backup, permissions, SELinux contexts) harder to reason about.
+
+### Asset deployment
+
+Static assets (CSS, JavaScript, images, fonts, etc.) are deployed to `/srv/assets/<app>/` under a shared asset store, keeping them semantically distinct from application binaries while remaining part of the app's runtime deployment:
+
+- **Source:** Place assets in `/tmp/<app>-assets/` before deploying.
+- **Destination:** Assets deploy to `/srv/assets/<app>/`
+- **Rationale:** A shared asset store simplifies CDN or reverse-proxy configurations, enables efficient cache invalidation per app, and keeps asset ownership clear.
+
+**Example:**
+
+Build pipeline prepares:
+
+`/tmp/myapp` and `/tmp/myapp-assets`
+
+`./bin/forte deploy myapp serviceuser`
+-> `/srv/myapp/`, `/etc/myapp/`, and `/srv/assets/myapp/`
+
+Configure your web server to serve assets from `/srv/assets/<app>/` and app routes from `/srv/<app>/`
 
 ## FHS compliance
 
