@@ -38,7 +38,7 @@ Result:
 - Config files → /etc/myapp/
 - **Static assets** → /srv/assets/myapp/
 
-To deploy assets, place them in `/tmp/myapp-assets` before running `deploy`.
+To deploy assets, place them in `/tmp/myapp-assets` before running `deploy`. `/tmp/myapp-assets.tar.gz` is also a supported deployment source.
 
 ## Minimal API (0.2.0)
 
@@ -56,12 +56,16 @@ usage: forte <command> [<args>]
 Behavior summary:
 
 - No configuration or flags in 0.2.0.
-- Expected source layout: `/tmp/<app>`, `/tmp/<app>-config`, and `/tmp/<app>-assets`.
+- Expected source layout: `/tmp/<app>`, `/tmp/<app>-config`, and `/tmp/<app>-assets` or `/tmp/<app>.tar.gz`, `/tmp/<app>-config.tar.gz`, and `/tmp/<app>-assets.tar.gz`.
 - Mapping:
   - `/tmp/<app>` → `/srv/<app>`
   - `/tmp/<app>-config` → `/etc/<app>`
   - `/tmp/<app>-assets` → `/srv/assets/<app>/`
+  - `/tmp/<app>.tar.gz` → `/srv/<app>`
+  - `/tmp/<app>-config.tar.gz` → `/etc/<app>`
+  - `/tmp/<app>-assets.tar.gz` → `/srv/assets/<app>/`
 - The `-config` and `-assets` suffixes on source directories signal configuration and static assets, respectively.
+- Tarball deployment sources is supported and permissions and ownership are preserved.
 - Binaries released for amd64 and arm64 as GitHub artifacts.
 
 ## Guarantees and current limitations
@@ -72,7 +76,7 @@ Behavior summary:
   - Files:       root:serviceuser, 0640
 - Known limitations:
   - Permission-only changes in the source are currently ignored if the file contents are unchanged. (Forte will not update permissions in that case.)
-  - No dry-run option in 0.1.0.
+  - No dry-run option.
   - No automatic cleanup of the source directory.
   - No rollback of partial or failed deployments; partial state may remain on error.
 
@@ -120,7 +124,7 @@ Avoid introducing a top-level /srv/assets/ that mixes different server roles. Sp
 
 Static assets (CSS, JavaScript, images, fonts, etc.) are deployed to `/srv/assets/<app>/` under a shared asset store, keeping them semantically distinct from application binaries while remaining part of the app's runtime deployment:
 
-- **Source:** Place assets in `/tmp/<app>-assets/` before deploying.
+- **Source:** Place assets in `/tmp/<app>-assets/` or `/tmp/<app>-assets.tar.gz` before deploying.
 - **Destination:** Assets deploy to `/srv/assets/<app>/`
 - **Rationale:** A shared asset store simplifies CDN or reverse-proxy configurations, enables efficient cache invalidation per app, and keeps asset ownership clear.
 
@@ -128,7 +132,7 @@ Static assets (CSS, JavaScript, images, fonts, etc.) are deployed to `/srv/asset
 
 Build pipeline prepares:
 
-`/tmp/myapp` and `/tmp/myapp-assets`
+`/tmp/myapp` and `/tmp/myapp-assets` or `/tmp/myapp.tar.gz` and `/tmp/myapp-assets.tar.gz`
 
 `./bin/forte deploy myapp serviceuser`
 -> `/srv/myapp/`, `/etc/myapp/`, and `/srv/assets/myapp/`
