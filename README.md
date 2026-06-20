@@ -5,15 +5,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/ericfortmeyer/forte/actions/workflows/push.yml">
-    <img src="https://github.com/ericfortmeyer/forte/actions/workflows/push.yml/badge.svg" alt="Quality Checks">
-  </a>
-  <a href="https://github.com/ericfortmeyer/forte/actions/workflows/release.yml">
-    <img src="https://github.com/ericfortmeyer/forte/actions/workflows/release.yml/badge.svg?event=release" alt="Release">
-  </a>
-  <a href="https://github.com/ericfortmeyer/forte/actions/workflows/pr.yml">
-    <img src="https://github.com/ericfortmeyer/forte/actions/workflows/pr.yml/badge.svg" alt="Integration Tests">
-  </a>
+  <img src="https://github.com/ericfortmeyer/forte/actions/workflows/push.yml/badge.svg" alt="Quality Checks">
+  <img src="https://github.com/ericfortmeyer/forte/actions/workflows/release.yml/badge.svg?event=release" alt="Release">
+  <img src="https://github.com/ericfortmeyer/forte/actions/workflows/pr.yml/badge.svg" alt="Integration Tests">
 </p>
 
 ## Why Forte
