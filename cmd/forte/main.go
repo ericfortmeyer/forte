@@ -4,21 +4,28 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"path/filepath"
 
+	"github.com/ericfortmeyer/forte/internal/archive"
 	"github.com/ericfortmeyer/forte/internal/deploy"
 	"github.com/ericfortmeyer/forte/internal/fhs"
 	"github.com/ericfortmeyer/forte/internal/help"
 	forteversion "github.com/ericfortmeyer/forte/internal/version"
 )
 
+const ()
 const (
-	srcRoot    = "/tmp"
-	destRoot   = "" // an empty string resolves to /
-	helpCmd    = "help"
-	deployCmd  = "deploy"
-	versionCmd = "version"
-	dirPerms   = 0750
-	filePerms  = 0640
+	srcRoot                 = "/tmp"
+	destRoot                = "" // an empty string resolves to /
+	helpCmd                 = "help"
+	deployCmd               = "deploy"
+	versionCmd              = "version"
+	dirPerms                = 0750
+	filePerms               = 0640
+	deploymentTypeSeparator = "-"
+	configSuffix            = "config"
+	assetsSuffix            = "assets"
+	archiveExt              = ".tar.gz"
 )
 
 func main() {
@@ -47,6 +54,23 @@ func main() {
 			os.Exit(1)
 		}
 
+		archiveNames := []string{
+			appName,
+			appName + deploymentTypeSeparator + configSuffix,
+			appName + deploymentTypeSeparator + assetsSuffix,
+		}
+
+		for _, name := range archiveNames {
+			tarGzPath := filepath.Join(srcRoot, name+archiveExt)
+			destDir := filepath.Join(srcRoot, name)
+			if err := archive.Extract(tarGzPath, destDir); err != nil {
+				if !archive.IsSkippable(err) {
+					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+					os.Exit(1)
+				} // IsSkippable errors are silently ignored
+			}
+		}
+
 		deployments, err := deploy.ResolveSrc(srcRoot, appName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
@@ -62,8 +86,8 @@ func main() {
 				FilePerms:     filePerms,
 				Chown:         deploy.ChownProduction,
 				DestRoot:      destRoot,
-				ConfigDest:    fhs.ConfigDest(), // TODO: support config file / env var override in future version
-				WebSvcDest:    fhs.WebSvcDest(), // TODO: support config file / env var override in future version
+				ConfigDest:    fhs.ConfigDest(),   // TODO: support config file / env var override in future version
+				WebSvcDest:    fhs.WebSvcDest(),   // TODO: support config file / env var override in future version
 				SvcAssetDest:  fhs.SvcAssetDest(), // TODO: support config file / env var override in future version
 			}
 
