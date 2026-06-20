@@ -125,7 +125,7 @@ func TestDeployInstallsConfig(t *testing.T) {
 	}
 
 	deployment := Deployment{
-		Src:  filepath.Join("testdata", fakeAppName+DeploymentTypeSeparator+string(DeploymentTypeConfig)),
+		Src:  filepath.Join("testdata", fakeAppName+DeploymentTypeSeparator+ConfigSuffix),
 		Type: DeploymentTypeConfig,
 	}
 
@@ -215,7 +215,7 @@ func TestDeployInstallsServiceAssets(t *testing.T) {
 	mockChown := func(filename string, uid, gid int) error { return nil }
 
 	deployment := Deployment{
-		Src:  filepath.Join("testdata", fakeAppName+DeploymentTypeSeparator+string(DeploymentTypeAssets)),
+		Src:  filepath.Join("testdata", fakeAppName+DeploymentTypeSeparator+AssetsSuffix),
 		Type: DeploymentTypeAssets,
 	}
 
@@ -268,7 +268,7 @@ func TestResolveSrc(t *testing.T) {
 		{
 			name: "only config version exists",
 			setup: func(t *testing.T, srcRoot string) {
-				configPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeConfig))
+				configPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+ConfigSuffix)
 				if err := os.MkdirAll(configPath, 0755); err != nil {
 					t.Fatalf("setup failed: %v", err)
 				}
@@ -280,7 +280,7 @@ func TestResolveSrc(t *testing.T) {
 		{
 			name: "only assets version exists",
 			setup: func(t *testing.T, srcRoot string) {
-				assetsPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeAssets))
+				assetsPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+AssetsSuffix)
 				if err := os.MkdirAll(assetsPath, 0755); err != nil {
 					t.Fatalf("setup failed: %v", err)
 				}
@@ -305,7 +305,7 @@ func TestResolveSrc(t *testing.T) {
 			name: "both config and service exist",
 			setup: func(t *testing.T, srcRoot string) {
 				servicePath := filepath.Join(srcRoot, "myapp")
-				configPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeConfig))
+				configPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+ConfigSuffix)
 				if err := os.MkdirAll(servicePath, 0755); err != nil {
 					t.Fatalf("setup failed: %v", err)
 				}
@@ -321,7 +321,7 @@ func TestResolveSrc(t *testing.T) {
 			name: "both assets and service exist",
 			setup: func(t *testing.T, srcRoot string) {
 				servicePath := filepath.Join(srcRoot, "myapp")
-				assetsPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeAssets))
+				assetsPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+AssetsSuffix)
 				if err := os.MkdirAll(servicePath, 0755); err != nil {
 					t.Fatalf("setup failed: %v", err)
 				}
@@ -336,8 +336,8 @@ func TestResolveSrc(t *testing.T) {
 		{
 			name: "both assets and config exist",
 			setup: func(t *testing.T, srcRoot string) {
-				assetsPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeAssets))
-				configPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeConfig))
+				assetsPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+AssetsSuffix)
+				configPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+ConfigSuffix)
 				if err := os.MkdirAll(assetsPath, 0755); err != nil {
 					t.Fatalf("setup failed: %v", err)
 				}
@@ -353,8 +353,8 @@ func TestResolveSrc(t *testing.T) {
 			name: "assets, service, and config exist",
 			setup: func(t *testing.T, srcRoot string) {
 				servicePath := filepath.Join(srcRoot, "myapp")
-				assetsPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeAssets))
-				configPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+string(DeploymentTypeConfig))
+				assetsPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+AssetsSuffix)
+				configPath := filepath.Join(srcRoot, "myapp"+DeploymentTypeSeparator+ConfigSuffix)
 				if err := os.MkdirAll(servicePath, 0755); err != nil {
 					t.Fatalf("setup failed: %v", err)
 				}
@@ -413,9 +413,9 @@ func TestResolveSrc(t *testing.T) {
 				var expectedSrc string
 				switch deployment.Type {
 				case DeploymentTypeConfig:
-					expectedSrc = filepath.Join(srcRoot, tt.appName+DeploymentTypeSeparator+string(DeploymentTypeConfig))
+					expectedSrc = filepath.Join(srcRoot, tt.appName+DeploymentTypeSeparator+ConfigSuffix)
 				case DeploymentTypeAssets:
-					expectedSrc = filepath.Join(srcRoot, tt.appName+DeploymentTypeSeparator+string(DeploymentTypeAssets))
+					expectedSrc = filepath.Join(srcRoot, tt.appName+DeploymentTypeSeparator+AssetsSuffix)
 				default:
 					expectedSrc = filepath.Join(srcRoot, tt.appName)
 				}
