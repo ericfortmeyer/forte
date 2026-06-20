@@ -32,3 +32,13 @@ jobs:
 
       - name: Unit Tests
         run: make test
+
+  examples:
+    name: Example Deployments
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: PHP App Deployment
+        run: make -s example-php-deployment
