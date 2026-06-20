@@ -11,20 +11,24 @@ import (
 )
 
 const (
-	_ = iota
-	ConfigDeployment
-	ServiceDeployment
-	ServiceAssetDeployment
+	DeploymentTypeConfig = iota
+	DeploymentTypeService
+	DeploymentTypeAssets
+)
+const (
+	DeploymentTypeSeparator = "-"
+	ConfigSuffix            = "config"
+	AssetsSuffix            = "assets"
+	defaultFileOwner        = "root"
+	defaultDirOwner         = "root"
 )
 
-const (
-	DeploymentTypeSeparator                = "-"
-	DeploymentTypeConfig    DeploymentType = "config"
-	DeploymentTypeService   DeploymentType = "service"
-	DeploymentTypeAssets    DeploymentType = "assets"
-	defaultFileOwner                       = "root"
-	defaultDirOwner                        = "root"
-)
+type DeploymentType int
+
+type Deployment struct {
+	Src  string
+	Type DeploymentType
+}
 
 type CopyCfg struct {
 	Src       string
@@ -56,13 +60,6 @@ type Owners struct {
 	DirGroup  *user.Group
 	FileOwner *user.User
 	FileGroup *user.Group
-}
-
-type DeploymentType string
-
-type Deployment struct {
-	Src  string
-	Type DeploymentType
 }
 
 type CleanupFunc func(Src string) error
@@ -143,8 +140,8 @@ func ResolveSrc(srcRoot, appName string) ([]Deployment, error) {
 	var deployments []Deployment
 
 	servicePath := filepath.Join(srcRoot, appName)
-	configPath := filepath.Join(srcRoot, appName+DeploymentTypeSeparator+string(DeploymentTypeConfig))
-	serviceAssetPath := filepath.Join(srcRoot, appName+DeploymentTypeSeparator+string(DeploymentTypeAssets))
+	configPath := filepath.Join(srcRoot, appName+DeploymentTypeSeparator+deploymentTypeSuffix(DeploymentTypeConfig))
+	serviceAssetPath := filepath.Join(srcRoot, appName+DeploymentTypeSeparator+deploymentTypeSuffix(DeploymentTypeAssets))
 
 	// Check for config deployment
 	if _, err := os.Stat(configPath); err == nil {
@@ -371,4 +368,14 @@ func ownersAndGroups(cfg DeployConfig) (Owners, error) {
 	}
 
 	return Owners{DirOwner: dirOwner, DirGroup: dirGroup, FileOwner: fileOwner, FileGroup: fileGroup}, nil
+}
+
+func deploymentTypeSuffix(dt DeploymentType) string {
+	switch dt {
+	case DeploymentTypeAssets:
+		return AssetsSuffix
+	case DeploymentTypeConfig:
+		return ConfigSuffix
+	}
+	return ""
 }
