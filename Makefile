@@ -12,13 +12,13 @@ clean:
 	rm -f bin/forte
 
 test:
-	go test -timeout 30s -test.fullpath=true github.com/ericfortmeyer/forte/internal/version github.com/ericfortmeyer/forte/internal/help github.com/ericfortmeyer/forte/internal/fhs github.com/ericfortmeyer/forte/internal/deploy
+	go test -timeout 30s -test.fullpath=true github.com/ericfortmeyer/forte/internal/version github.com/ericfortmeyer/forte/internal/help github.com/ericfortmeyer/forte/internal/fhs github.com/ericfortmeyer/forte/internal/deploy github.com/ericfortmeyer/forte/internal/archive
 
 fmt:
-	go fmt github.com/ericfortmeyer/forte/internal/version github.com/ericfortmeyer/forte/internal/help github.com/ericfortmeyer/forte/internal/fhs github.com/ericfortmeyer/forte/internal/deploy
+	go fmt github.com/ericfortmeyer/forte/internal/version github.com/ericfortmeyer/forte/internal/help github.com/ericfortmeyer/forte/internal/fhs github.com/ericfortmeyer/forte/internal/deploy github.com/ericfortmeyer/forte/internal/archive
 
 vet:
-	go vet github.com/ericfortmeyer/forte/internal/version github.com/ericfortmeyer/forte/internal/help github.com/ericfortmeyer/forte/internal/fhs github.com/ericfortmeyer/forte/internal/deploy
+	go vet github.com/ericfortmeyer/forte/internal/version github.com/ericfortmeyer/forte/internal/help github.com/ericfortmeyer/forte/internal/fhs github.com/ericfortmeyer/forte/internal/deploy github.com/ericfortmeyer/forte/internal/archive
 
 lint: fmt vet
 	@echo "Linting passed"
