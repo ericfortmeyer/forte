@@ -37,6 +37,6 @@ example-php-deployment: build
 	echo "\033[1;33mBuilding image...\033[0m"
 	docker build --quiet -f examples/php/Dockerfile -t forte-example-php .
 	docker run --read-only --rm -d --name forte-example-php -p 8000:8000 forte-example-php
-	curl -fs  http://localhost:8000/ | grep -q '"status":"ok"' && \
+	curl -fs --retry 2 --retry-delay 1  http://localhost:8000/ | grep -q '"status":"ok"' && \
 		(echo "\033[0;32m✓ PHP deployed app health check passed\033[0m"; docker stop forte-example-php) || \
 		(docker logs forte-example-php; docker stop forte-example-php; exit 1)
