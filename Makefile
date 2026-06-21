@@ -1,4 +1,4 @@
-.PHONY: build run clean test fmt vet lint docker-build docker-integration-test example-php-deployment
+.PHONY: build run clean test fmt vet lint docker-build docker-integration-test example-php-deployment example-python-deployment
 
 VERSION = $(shell grep -oE 'version = "[^"]+"' .cz.toml | cut -d'"' -f2 || echo "0.0.0")
 
@@ -38,5 +38,13 @@ example-php-deployment: build
 	docker build --quiet -f examples/php/Dockerfile -t forte-example-php .
 	docker run --read-only --rm -d --name forte-example-php -p 8000:8000 forte-example-php
 	curl -fs --retry 5 --retry-delay 2 --retry-all-errors  http://0.0.0.0:8000/ | grep -q '"status":"ok"' && \
-		(echo "\033[0;32m✓ PHP deployed app health check passed\033[0m"; docker stop forte-example-php) || \
+		(echo "\033[0;32m✓ Deployed PHP app health check passed\033[0m"; docker stop forte-example-php) || \
 		(docker logs forte-example-php; docker stop forte-example-php; exit 1)
+
+example-python-deployment: build
+	@echo "\033[1;33mBuilding image...\033[0m"
+	docker build --quiet -f examples/python/Dockerfile -t forte-example-python .
+	docker run --read-only --rm -d --name forte-example-python -p 8000:8000 forte-example-python
+	curl -fs --retry 5 --retry-delay 2 --retry-all-errors  http://0.0.0.0:8000/ | grep -q '"status": "ok"' && \
+		(echo "\033[0;32m✓ Deployed Python app health check passed\033[0m"; docker stop forte-example-python) || \
+		(docker logs forte-example-python; docker stop forte-example-python; exit 1)
