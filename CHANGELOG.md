@@ -3,6 +3,17 @@
 All notable changes to this project are documented in this file.
 This project uses [Semantic Versioning](https://semver.org/)
 
+## 0.2.0 (2026-06-20)
+
+### Feat
+
+- **deploy**: add support for tarball extraction
+- **deploy**: add support for static assets deployment (#17)
+
+### Refactor
+
+- **deploy**: use integer enums for deployment type
+
 ## 0.1.7 (2026-06-13)
 
 ### Fix
