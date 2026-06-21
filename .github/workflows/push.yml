@@ -46,3 +46,6 @@ jobs:
 
       - name: PHP App Deployment
         run: make -s example-php-deployment
+
+      - name: Python App Deployment
+        run: make -s example-python-deployment
