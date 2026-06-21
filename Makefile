@@ -1,4 +1,4 @@
-.PHONY: build run clean test fmt vet lint docker-build docker-integration-test example-php-deployment example-python-deployment
+.PHONY: build run clean test fmt vet lint docker-build docker-integration-test example-php-deployment example-python-deployment example-nodejs-deployment
 
 VERSION = $(shell grep -oE 'version = "[^"]+"' .cz.toml | cut -d'"' -f2 || echo "0.0.0")
 
@@ -48,3 +48,11 @@ example-python-deployment: build
 	curl -fs --retry 5 --retry-delay 2 --retry-all-errors  http://0.0.0.0:8000/ | grep -q '"status": "ok"' && \
 		(echo "\033[0;32m✓ Deployed Python app health check passed\033[0m"; docker stop forte-example-python) || \
 		(docker logs forte-example-python; docker stop forte-example-python; exit 1)
+
+example-nodejs-deployment: build
+	@echo "\033[1;33mBuilding image...\033[0m"
+	docker build --quiet -f examples/nodejs/Dockerfile -t forte-example-nodejs .
+	docker run --read-only --rm -d --name forte-example-nodejs -p 8000:8000 forte-example-nodejs
+	curl -fs --retry 5 --retry-delay 2 --retry-all-errors  http://0.0.0.0:8000/ | grep -q '"status":"ok"' && \
+		(echo "\033[0;32m✓ Deployed NodeJS app health check passed\033[0m"; docker stop forte-example-nodejs) || \
+		(docker logs forte-example-nodejs; docker stop forte-example-nodejs; exit 1)

@@ -49,3 +49,6 @@ jobs:
 
       - name: Python App Deployment
         run: make -s example-python-deployment
+
+      - name: NodeJS App Deployment
+        run: make -s example-nodejs-deployment
