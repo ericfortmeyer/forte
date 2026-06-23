@@ -2,6 +2,8 @@
 
 Minimal deployment examples demonstrating how `forte deploy` installs services across different languages.
 
+**Note** The example applications are NOT PRODUCTION READY.
+
 ## Quick Start
 
 Each example builds a Docker image and runs a minimal HTTP server. Build from the repository root:
