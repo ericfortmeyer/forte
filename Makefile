@@ -21,7 +21,7 @@ vet:
 	go vet ./...
 
 lint: fmt vet
-	@echo "Linting passed"
+	@echo "\033[0;32mLinting passed\033[0m"
 
 docker-build:
 	docker build -qt forte:$(VERSION) .
