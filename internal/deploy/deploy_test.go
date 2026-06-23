@@ -479,8 +479,14 @@ func TestCopyRecursiveHandlesCreateDstFail(t *testing.T) {
 
 	// Read-only destination directory (can't create subdirs)
 	dstDir := t.TempDir()
-	os.Chmod(dstDir, 0000)
-	defer os.Chmod(dstDir, 0755) // cleanup
+	if err := os.Chmod(dstDir, 0000); err != nil {
+		t.Fatalf("chmod failed: %v", err)
+	}
+	defer func() {
+		if err := os.Chmod(dstDir, 0755); err != nil {
+			t.Fatalf("chmod failed: %v", err)
+		}
+	}()
 
 	cfg := CopyCfg{
 		Src:       srcDir,
@@ -585,7 +591,12 @@ func TestCopyRecursiveHandlesFileOpenFailure(t *testing.T) {
 	if err := os.WriteFile(srcFile, []byte("test"), 0000); err != nil {
 		t.Fatalf("setup failed: %v", err)
 	}
-	defer os.Chmod(srcFile, 0644) // cleanup
+
+	defer func() {
+		if err := os.Chmod(srcFile, 0644); err != nil {
+			t.Fatalf("chmod failed: %v", err)
+		}
+	}()
 
 	cfg := CopyCfg{
 		Src:       srcDir,
