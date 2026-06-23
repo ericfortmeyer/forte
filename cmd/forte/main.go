@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"os/user"
@@ -90,12 +91,16 @@ func Run(
 	switch cmd {
 	case deployCmd:
 		if len(args) < 2 {
-			_, _ = out.Write([]byte("Application name required"))
+			if _, err := out.Write([]byte("Application name required")); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+			}
 			exit(1)
 			return
 		}
 		if len(args) < 3 {
-			_, _ = out.Write([]byte("Web service user required"))
+			if _, err := out.Write([]byte("Web service user required")); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+			}
 			exit(1)
 			return
 		}
@@ -104,7 +109,9 @@ func Run(
 
 		validUser, err := userValidator(webServerUser)
 		if err != nil {
-			_, _ = out.Write([]byte("Error: user not found " + webServerUser))
+			if _, err := out.Write([]byte("Error: user not found " + webServerUser)); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+			}
 			exit(1)
 			return
 		}
@@ -120,7 +127,9 @@ func Run(
 			destDir := filepath.Join(srcRoot, name)
 			if err := a.Extract(tarGzPath, destDir); err != nil {
 				if !a.IsSkippable(err) {
-					out.Write([]byte("Error: " + err.Error()))
+					if _, err := out.Write([]byte("Error: " + err.Error())); err != nil {
+						fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+					}
 					exit(1)
 					return
 				} // IsSkippable errors are silently ignored
@@ -128,7 +137,9 @@ func Run(
 		}
 
 		if deployments, err := d.ResolveSrc(srcRoot, appName); err != nil {
-			_, _ = out.Write([]byte("Error: " + err.Error()))
+			if _, err := out.Write([]byte("Error: " + err.Error())); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+			}
 			exit(1)
 			return
 		} else {
@@ -147,7 +158,9 @@ func Run(
 				}
 
 				if err := d.Deploy(cfg, deploy.CleanupProduction); err != nil {
-					_, _ = out.Write([]byte("Error: " + err.Error()))
+					if _, err := out.Write([]byte("Error: " + err.Error())); err != nil {
+						fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+					}
 					exit(1)
 					return
 				}
@@ -155,15 +168,21 @@ func Run(
 		}
 
 	case helpCmd:
-		out.Write([]byte(help.Help()))
+		if _, err := out.Write([]byte(help.Help())); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		}
 		exit(0)
 		return
 	case versionCmd:
-		out.Write([]byte(forteversion.Version()))
+		if _, err := out.Write([]byte(forteversion.Version())); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		}
 		exit(0)
 		return
 	default:
-		out.Write([]byte("Error: Invalid subcommand: " + cmd + ". Valid subcommands are deploy, version, and help."))
+		if _, err := out.Write([]byte("Error: Invalid subcommand: " + cmd + ". Valid subcommands are deploy, version, and help.")); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		}
 		exit(1)
 	}
 }
