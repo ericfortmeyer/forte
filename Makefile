@@ -14,6 +14,9 @@ clean:
 test:
 	go test -timeout 30s ./...
 
+test-coverage:
+	go test -coverprofile=coverage.out -v ./...
+
 fmt:
 	go fmt ./...
 
