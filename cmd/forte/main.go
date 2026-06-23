@@ -90,12 +90,12 @@ func Run(
 	switch cmd {
 	case deployCmd:
 		if len(args) < 2 {
-			out.Write([]byte("Application name required"))
+			_, _ = out.Write([]byte("Application name required"))
 			exit(1)
 			return
 		}
 		if len(args) < 3 {
-			out.Write([]byte("Web service user required"))
+			_, _ = out.Write([]byte("Web service user required"))
 			exit(1)
 			return
 		}
@@ -104,7 +104,7 @@ func Run(
 
 		validUser, err := userValidator(webServerUser)
 		if err != nil {
-			out.Write([]byte("Error: user not found " + webServerUser))
+			_, _ = out.Write([]byte("Error: user not found " + webServerUser))
 			exit(1)
 			return
 		}
@@ -128,7 +128,7 @@ func Run(
 		}
 
 		if deployments, err := d.ResolveSrc(srcRoot, appName); err != nil {
-			out.Write([]byte("Error: " + err.Error()))
+			_, _ = out.Write([]byte("Error: " + err.Error()))
 			exit(1)
 			return
 		} else {
@@ -147,7 +147,7 @@ func Run(
 				}
 
 				if err := d.Deploy(cfg, deploy.CleanupProduction); err != nil {
-					out.Write([]byte("Error: " + err.Error()))
+					_, _ = out.Write([]byte("Error: " + err.Error()))
 					exit(1)
 					return
 				}
@@ -162,5 +162,8 @@ func Run(
 		out.Write([]byte(forteversion.Version()))
 		exit(0)
 		return
+	default:
+		out.Write([]byte("Error: Invalid subcommand: " + cmd + ". Valid subcommands are deploy, version, and help."))
+		exit(1)
 	}
 }

@@ -77,6 +77,25 @@ func TestOutputsHelpIfNoSubcommandIsGiven(t *testing.T) {
 	}
 }
 
+func TestOutputsHelpIfInvalidSubcommandIsGiven(t *testing.T) {
+	var exitCode int
+	mockExit := func(code int) { exitCode = code }
+	output := &bytes.Buffer{}
+	noopUserValidator := func(username string) (*user.User, error) {
+		return nil, nil
+	}
+
+	Run([]string{"INVALID_SUBCOMMAND"}, mockArchiveNoop{}, mockDeployNoop{}, noopUserValidator, mockExit, output)
+
+	if exitCode != 1 {
+		t.Fatal("Should have exited with exit code 1")
+	}
+
+	if output.String() != "Error: Invalid subcommand: INVALID_SUBCOMMAND. Valid subcommands are deploy, version, and help." {
+		t.Fatalf("Should have printed 'Invalid subcommand: INVALID_SUBCOMMAND. Valid subcommands are deploy, version, and help. but printed: %s", output)
+	}
+}
+
 func TestOutputsHelpIfHelpSubcommandIsGiven(t *testing.T) {
 	var exitCode int
 	mockExit := func(code int) { exitCode = code }
@@ -179,7 +198,7 @@ func TestOutputsErrorIfDeploySubcommandIsGivenInvalidSvcUser(t *testing.T) {
 		t.Fatal("Should have exited with exit code 1")
 	}
 
-	if !(strings.Contains(output.String(), "Error") && strings.Contains(output.String(), "www-data")) {
+	if !strings.Contains(output.String(), "Error") || !strings.Contains(output.String(), "www-data") {
 		t.Fatalf("Should have printed Error message but printed: %s", output)
 	}
 }
