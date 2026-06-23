@@ -2,7 +2,9 @@
 
 Minimal deployment examples demonstrating how `forte deploy` installs services across different languages.
 
-**Note** The example applications are NOT PRODUCTION READY.
+> ⚠️ EXAMPLE ONLY - NOT TO BE USED IN PRODUCTION
+> The Dockerfiles in the subdirectories demonstrate deployments using <https://github.com/ericfortmeyer/forte>
+> Production deployments required additional hardening: resource limits, server configuration, resource limits, secrets management, and proper logging.
 
 ## Quick Start
 

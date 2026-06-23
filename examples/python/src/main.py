@@ -2,6 +2,13 @@
 
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
+import signal
+import sys
+
+def shutdown_fn(server):
+    print("Shutting down...")
+    server.shutdown()
+    sys.exit(0)
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -18,7 +25,14 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass # Suppress default logging
 
+
 if __name__ == '__main__':
     server = HTTPServer(('0.0.0.0', 8000), HealthCheckHandler)
+
+    signal.signal(
+        signal.SIGTERM,
+        lambda : shutdown_fn(server),
+    )
+
     print('Server listening on 0.0.0.0:8000')
     server.serve_forever()
