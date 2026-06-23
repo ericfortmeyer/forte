@@ -38,7 +38,7 @@ docker-integration-test: build docker-build
 
 forte-example-build: build
 	@echo "\033[1;33mBuilding forte build image...\033[0m"
-	docker build --quiet -f examples/Dockerfile -t forte-example-builder .
+	docker build --build-arg FORTEVERSION=$(VERSION)  --quiet -f examples/Dockerfile -t forte-example-builder .
 
 example-java-deployment: build forte-example-build
 	@echo "\033[1;33mBuilding app image...\033[0m"
