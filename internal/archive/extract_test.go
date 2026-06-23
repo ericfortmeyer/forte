@@ -2,6 +2,7 @@ package archive
 
 import (
 	"compress/gzip"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -207,13 +208,25 @@ func createTestTarGz(path string, files map[string]string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("warning: failed to close file: %v", err)
+		}
+	}()
 
 	gzipWriter := gzip.NewWriter(file)
-	defer gzipWriter.Close()
+	defer func() {
+		if err := gzipWriter.Close(); err != nil {
+			fmt.Printf("warning: failed to close gzip writer: %v", err)
+		}
+	}()
 
 	tarWriter := tar.NewWriter(gzipWriter)
-	defer tarWriter.Close()
+	defer func() {
+		if err := tarWriter.Close(); err != nil {
+			fmt.Printf("warning: failed to close gzip writer: %v", err)
+		}
+	}()
 
 	for name, content := range files {
 		// Create parent directories if needed
@@ -252,13 +265,25 @@ func createTestTarGzWithMaliciousPath(path, maliciousPath string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("warning: failed to close file: %v", err)
+		}
+	}()
 
 	gzipWriter := gzip.NewWriter(file)
-	defer gzipWriter.Close()
+	defer func() {
+		if err := gzipWriter.Close(); err != nil {
+			fmt.Printf("warning: failed to close gzip writer: %v", err)
+		}
+	}()
 
 	tarWriter := tar.NewWriter(gzipWriter)
-	defer tarWriter.Close()
+	defer func() {
+		if err := tarWriter.Close(); err != nil {
+			fmt.Printf("warning: failed to close gzip writer: %v", err)
+		}
+	}()
 
 	header := &tar.Header{
 		Name: maliciousPath,
@@ -281,13 +306,25 @@ func createTestTarGzWithPermissions(path, name, content string, mode int64) erro
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("warning: failed to close file: %v", err)
+		}
+	}()
 
 	gzipWriter := gzip.NewWriter(file)
-	defer gzipWriter.Close()
+	defer func() {
+		if err := gzipWriter.Close(); err != nil {
+			fmt.Printf("warning: failed to close gzip writer: %v", err)
+		}
+	}()
 
 	tarWriter := tar.NewWriter(gzipWriter)
-	defer tarWriter.Close()
+	defer func() {
+		if err := tarWriter.Close(); err != nil {
+			fmt.Printf("warning: failed to close gzip writer: %v", err)
+		}
+	}()
 
 	header := &tar.Header{
 		Name: name,
