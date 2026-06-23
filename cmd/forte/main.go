@@ -81,7 +81,9 @@ func Run(
 	out io.Writer,
 ) {
 	if len(args) < 1 {
-		out.Write([]byte(help.Help()))
+		if _, err := out.Write([]byte(help.Help())); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		}
 		exit(1)
 		return
 	}
