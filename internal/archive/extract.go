@@ -29,14 +29,22 @@ func Extract(tarGzPath, destDir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open archive: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("warning: failed to close file: %v", err)
+		}
+	}()
 
 	// Decompress gzip
 	gzipReader, err := gzip.NewReader(file)
 	if err != nil {
 		return fmt.Errorf("invalid gzip format: %w", err)
 	}
-	defer gzipReader.Close()
+	defer func() {
+		if err := gzipReader.Close(); err != nil {
+			fmt.Printf("warning: failed to close gzip reader: %v", err)
+		}
+	}()
 
 	// Extract tar entries
 	tarReader := tar.NewReader(gzipReader)
@@ -72,10 +80,14 @@ func Extract(tarGzPath, destDir string) error {
 				return fmt.Errorf("failed to create file: %w", err)
 			}
 			if _, err := io.Copy(outFile, tarReader); err != nil {
-				outFile.Close()
+				if err := outFile.Close(); err != nil {
+					return fmt.Errorf("failed to close the out file: %w", err)
+				}
 				return fmt.Errorf("failed to extract file: %w", err)
 			}
-			outFile.Close()
+			if err := outFile.Close(); err != nil {
+				return fmt.Errorf("failed to close the out file: %w", err)
+			}
 
 			// Preserve file permissions
 			if err := os.Chmod(targetPath, header.FileInfo().Mode()); err != nil {
@@ -97,7 +109,11 @@ func validateGzipMagic(filePath string) error {
 		}
 		return fmt.Errorf("failed to open file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("warning: failed to close file: %v", err)
+		}
+	}()
 
 	// Read first two bytes
 	magic := make([]byte, 2)

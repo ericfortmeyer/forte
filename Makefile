@@ -14,6 +14,9 @@ clean:
 test:
 	go test -timeout 30s ./...
 
+test-coverage:
+	go test -race -covermode atomic -coverprofile=covprofile ./...
+
 fmt:
 	go fmt ./...
 

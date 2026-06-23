@@ -319,13 +319,21 @@ func copyRecursive(cfg CopyCfg) error {
 		if err != nil {
 			return err
 		}
-		defer srcFile.Close()
+		defer func() {
+			if err := srcFile.Close(); err != nil {
+				fmt.Printf("warning: failed to close file: %v", err)
+			}
+		}()
 
 		dstFile, err := os.Create(dstPath)
 		if err != nil {
 			return err
 		}
-		defer dstFile.Close()
+		defer func() {
+			if err := dstFile.Close(); err != nil {
+				fmt.Printf("warning: failed to close file: %v", err)
+			}
+		}()
 
 		if _, err := io.Copy(dstFile, srcFile); err != nil {
 			return err
