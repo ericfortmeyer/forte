@@ -5,6 +5,7 @@ on:
       - "**/*.go"
       - "go.mod"
       - ".github/workflows/push.yml"
+      - ".golangci.yml"
       - "Makefile"
 
 jobs:
