@@ -8,7 +8,7 @@
   <img src="https://github.com/ericfortmeyer/forte/actions/workflows/push.yml/badge.svg" alt="Quality Checks">
   <img src="https://github.com/ericfortmeyer/forte/actions/workflows/release.yml/badge.svg?event=release" alt="Release">
   <img src="https://github.com/ericfortmeyer/forte/actions/workflows/pr.yml/badge.svg" alt="Integration Tests">
-  <a href='https://coveralls.io/github/ericfortmeyer/forte?branch=chore/add-code-coverage'><img src='https://coveralls.io/repos/github/ericfortmeyer/forte/badge.svg?branch=chore/add-code-coverage' alt='Coverage Status' /></a>
+  <a href='https://coveralls.io/github/ericfortmeyer/forte'><img src='https://coveralls.io/repos/github/ericfortmeyer/forte/badge.svg' alt='Coverage Status' /></a>
 </p>
 
 ## Why Forte
