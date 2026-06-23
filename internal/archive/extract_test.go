@@ -508,7 +508,12 @@ func TestValidateGzipMagic_PermissionDenied(t *testing.T) {
 	if err := os.WriteFile(filePath, []byte{0x1f, 0x8b}, 0000); err != nil {
 		t.Fatalf("failed to create file: %v", err)
 	}
-	defer os.Chmod(filePath, 0644) // restore for cleanup
+
+	defer func() {
+		if err := os.Chmod(filePath, 0644); err != nil {
+			t.Fatalf("failed to chmod file: %v", err)
+		}
+	}()
 
 	err := validateGzipMagic(filePath)
 	if err == nil {
@@ -553,14 +558,26 @@ func createTestTarGzWithSymlink(path, target, linkName string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("warning: failed to close file: %v", err)
+		}
+	}()
 
 	gzipWriter := gzip.NewWriter(file)
-	defer gzipWriter.Close()
+	defer func() {
+		if err := gzipWriter.Close(); err != nil {
+			fmt.Printf("failed to close gzip writer: %v", err)
+		}
+	}()
 
 	tarWriter := tar.NewWriter(gzipWriter)
-	defer tarWriter.Close()
-
+	defer func() {
+		if err := tarWriter.Close(); err != nil {
+			fmt.Printf("failed to close tar writer: %v", err)
+		}
+	}()
 	// Add target file
 	header := &tar.Header{
 		Name: target,

@@ -582,7 +582,7 @@ func TestCopyRecursiveHandlesChownFailure(t *testing.T) {
 func TestCopyRecursiveHandlesFileOpenFailure(t *testing.T) {
 	srcDir := t.TempDir()
 	srcFile := filepath.Join(srcDir, "test.txt")
-	if err := os.WriteFile(srcFile, []byte("test"),0000); err != nil {
+	if err := os.WriteFile(srcFile, []byte("test"), 0000); err != nil {
 		t.Fatalf("setup failed: %v", err)
 	}
 	defer os.Chmod(srcFile, 0644) // cleanup
@@ -711,8 +711,9 @@ func TestDeploymentTypeSuffixDefault(t *testing.T) {
 
 func TestCopyRecursiveInvalidGid(t *testing.T) {
 	srcDir := t.TempDir()
-	os.WriteFile(filepath.Join(srcDir, "test.txt"), []byte("test"), 0644)
-
+	if err := os.WriteFile(filepath.Join(srcDir, "test.txt"), []byte("test"), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
 	cfg := CopyCfg{
 		Src:       srcDir,
 		Dst:       t.TempDir(),
