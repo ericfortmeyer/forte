@@ -46,7 +46,7 @@ jobs:
       - name: Send coverage
         uses: shogo82148/actions-goveralls@v1
         with:
-          path-to-profile: covprofile
+          path-to-profile: profile.cov
   examples:
     name: Example Deployments
     runs-on: ubuntu-latest

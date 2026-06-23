@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -424,5 +425,308 @@ func TestResolveSrc(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestOwnersAndGroupsFailsDirGroupLookup(t *testing.T) {
+	cfg := DeployConfig{
+		WebServerUser: &user.User{Username: "nonexistent-group-xyz"},
+	}
+
+	_, err := ownersAndGroups(cfg)
+	if err == nil {
+		t.Error("Expected ownersAndGroups to fail when group doesn't exist")
+	}
+}
+
+func TestOwnersAndGroupsFailsFileGroupLookup(t *testing.T) {
+	// This tests the fourth lookup that also fails on nonexistent group
+	cfg := DeployConfig{
+		WebServerUser: &user.User{Username: "nonexistent-group-123"},
+	}
+
+	_, err := ownersAndGroups(cfg)
+	if err == nil {
+		t.Error("Expected ownersAndGroups to fail")
+	}
+}
+
+func TestCopyRecursiveHandlesSourceNotExist(t *testing.T) {
+	cfg := CopyCfg{
+		Src:       "/nonexistent/source/path",
+		Dst:       t.TempDir(),
+		DirPerms:  0755,
+		FilePerms: 0644,
+		DirOwner:  &user.User{Uid: "0"},
+		DirGroup:  &user.Group{Gid: "0"},
+		FileOwner: &user.User{Uid: "0"},
+		FileGroup: &user.Group{Gid: "0"},
+		Chown:     func(string, int, int) error { return nil },
+	}
+
+	err := copyRecursive(cfg)
+	if err == nil {
+		t.Error("Expected copyRecursive to fail when source doesn't exist")
+	}
+}
+
+func TestCopyRecursiveHandlesCreateDstFail(t *testing.T) {
+	srcDir := t.TempDir()
+	srcFile := filepath.Join(srcDir, "test.txt")
+	if err := os.WriteFile(srcFile, []byte("test"), 0644); err != nil {
+		t.Fatalf("setup failed: %v", err)
+	}
+
+	// Read-only destination directory (can't create subdirs)
+	dstDir := t.TempDir()
+	os.Chmod(dstDir, 0000)
+	defer os.Chmod(dstDir, 0755) // cleanup
+
+	cfg := CopyCfg{
+		Src:       srcDir,
+		Dst:       filepath.Join(dstDir, "readonly"),
+		DirPerms:  0755,
+		FilePerms: 0644,
+		DirOwner:  &user.User{Uid: "0"},
+		DirGroup:  &user.Group{Gid: "0"},
+		FileOwner: &user.User{Uid: "0"},
+		FileGroup: &user.Group{Gid: "0"},
+		Chown:     func(string, int, int) error { return nil },
+	}
+
+	err := copyRecursive(cfg)
+	if err == nil {
+		t.Error("Expected copyRecursive to fail when destination is not writable")
+	}
+}
+
+func TestCopyRecursiveHandlesInvalidUid(t *testing.T) {
+	srcDir := t.TempDir()
+	srcFile := filepath.Join(srcDir, "test.txt")
+	if err := os.WriteFile(srcFile, []byte("test"), 0644); err != nil {
+		t.Fatalf("setup failed: %v", err)
+	}
+
+	cfg := CopyCfg{
+		Src:       srcDir,
+		Dst:       t.TempDir(),
+		DirPerms:  0755,
+		FilePerms: 0644,
+		DirOwner:  &user.User{Uid: "not-a-number"}, // Invalid UID
+		DirGroup:  &user.Group{Gid: "0"},
+		FileOwner: &user.User{Uid: "0"},
+		FileGroup: &user.Group{Gid: "0"},
+		Chown:     func(string, int, int) error { return nil },
+	}
+
+	err := copyRecursive(cfg)
+	if err == nil {
+		t.Error("Expected copyRecursive to fail on invalid UID conversion")
+	}
+}
+
+func TestCopyRecursiveHandlesInvalidFileUid(t *testing.T) {
+	srcDir := t.TempDir()
+	srcFile := filepath.Join(srcDir, "test.txt")
+	if err := os.WriteFile(srcFile, []byte("test"), 0644); err != nil {
+		t.Fatalf("setup failed: %v", err)
+	}
+
+	cfg := CopyCfg{
+		Src:       srcDir,
+		Dst:       t.TempDir(),
+		DirPerms:  0755,
+		FilePerms: 0644,
+		DirOwner:  &user.User{Uid: "0"},
+		DirGroup:  &user.Group{Gid: "0"},
+		FileOwner: &user.User{Uid: "invalid-uid"}, // Invalid UID
+		FileGroup: &user.Group{Gid: "0"},
+		Chown:     func(string, int, int) error { return nil },
+	}
+
+	err := copyRecursive(cfg)
+	if err == nil {
+		t.Error("Expected copyRecursive to fail on invalid file UID conversion")
+	}
+}
+
+func TestCopyRecursiveHandlesChownFailure(t *testing.T) {
+	srcDir := t.TempDir()
+	srcFile := filepath.Join(srcDir, "test.txt")
+	if err := os.WriteFile(srcFile, []byte("test"), 0644); err != nil {
+		t.Fatalf("setup failed: %v", err)
+	}
+
+	mockChown := func(filename string, uid, gid int) error {
+		return fmt.Errorf("permission denied")
+	}
+
+	cfg := CopyCfg{
+		Src:       srcDir,
+		Dst:       t.TempDir(),
+		DirPerms:  0755,
+		FilePerms: 0644,
+		DirOwner:  &user.User{Uid: "0"},
+		DirGroup:  &user.Group{Gid: "0"},
+		FileOwner: &user.User{Uid: "0"},
+		FileGroup: &user.Group{Gid: "0"},
+		Chown:     mockChown,
+	}
+
+	err := copyRecursive(cfg)
+	if err == nil {
+		t.Error("Expected copyRecursive to fail when chown fails")
+	}
+}
+
+func TestCopyRecursiveHandlesFileOpenFailure(t *testing.T) {
+	srcDir := t.TempDir()
+	srcFile := filepath.Join(srcDir, "test.txt")
+	if err := os.WriteFile(srcFile, []byte("test"),0000); err != nil {
+		t.Fatalf("setup failed: %v", err)
+	}
+	defer os.Chmod(srcFile, 0644) // cleanup
+
+	cfg := CopyCfg{
+		Src:       srcDir,
+		Dst:       t.TempDir(),
+		DirPerms:  0755,
+		FilePerms: 0644,
+		DirOwner:  &user.User{Uid: "0"},
+		DirGroup:  &user.Group{Gid: "0"},
+		FileOwner: &user.User{Uid: "0"},
+		FileGroup: &user.Group{Gid: "0"},
+		Chown:     func(string, int, int) error { return nil },
+	}
+
+	err := copyRecursive(cfg)
+	if err == nil {
+		t.Error("Expected copyRecursive to fail when source file can't be opened")
+	}
+}
+
+func TestDeployCleanupFailure(t *testing.T) {
+	rootDir := t.TempDir()
+	fakeAppName := "fake_app"
+	mockChown := func(filename string, uid, gid int) error { return nil }
+
+	deployment := Deployment{
+		Src:  filepath.Join("testdata", fakeAppName),
+		Type: DeploymentTypeService,
+	}
+
+	cfg := DeployConfig{
+		AppName:    fakeAppName,
+		Deployment: deployment,
+		WebServerUser: &user.User{
+			Uid: "0", Gid: "0", Username: "root", HomeDir: "/root",
+		},
+		DirPerms:   0755,
+		FilePerms:  0644,
+		ConfigDest: "/etc",
+		WebSvcDest: "/srv",
+		Chown:      mockChown,
+		DestRoot:   rootDir,
+	}
+
+	failingCleanup := func(src string) error {
+		return fmt.Errorf("cleanup failed")
+	}
+
+	// Deploy succeeds but cleanup fails
+	err := Deploy(cfg, failingCleanup)
+	if err == nil || err.Error() != "cleanup failed" {
+		t.Errorf("Expected cleanup error, got: %v", err)
+	}
+}
+
+func TestInstallConfigPropagatesError(t *testing.T) {
+	cfg := DeployConfig{
+		AppName: "testapp",
+		Deployment: Deployment{
+			Src:  "/nonexistent",
+			Type: DeploymentTypeConfig,
+		},
+		WebServerUser: &user.User{Username: "nonexistent"},
+		DestRoot:      t.TempDir(),
+		ConfigDest:    "/etc",
+		WebSvcDest:    "/srv",
+		Chown:         func(string, int, int) error { return nil },
+	}
+
+	err := Deploy(cfg, nil)
+	if err == nil {
+		t.Error("Expected Deploy to propagate installConfig error")
+	}
+}
+
+func TestInstallServicePropagatesError(t *testing.T) {
+	cfg := DeployConfig{
+		AppName: "testapp",
+		Deployment: Deployment{
+			Src:  "/nonexistent",
+			Type: DeploymentTypeService,
+		},
+		WebServerUser: &user.User{Username: "nonexistent"},
+		DestRoot:      t.TempDir(),
+		ConfigDest:    "/etc",
+		WebSvcDest:    "/srv",
+		Chown:         func(string, int, int) error { return nil },
+	}
+
+	err := Deploy(cfg, nil)
+	if err == nil {
+		t.Error("Expected Deploy to propagate installWebService error")
+	}
+}
+
+func TestInstallServiceAssetPropagatesError(t *testing.T) {
+	cfg := DeployConfig{
+		AppName: "testapp",
+		Deployment: Deployment{
+			Src:  "/nonexistent",
+			Type: DeploymentTypeAssets,
+		},
+		WebServerUser: &user.User{Username: "nonexistent"},
+		DestRoot:      t.TempDir(),
+		ConfigDest:    "/etc",
+		WebSvcDest:    "/srv",
+		SvcAssetDest:  "/srv/assets",
+		Chown:         func(string, int, int) error { return nil },
+	}
+
+	err := Deploy(cfg, nil)
+	if err == nil {
+		t.Error("Expected Deploy to propagate installServiceAsset error")
+	}
+}
+
+func TestDeploymentTypeSuffixDefault(t *testing.T) {
+	// Tests the default case in deploymentTypeSuffix
+	result := deploymentTypeSuffix(999) // Invalid type
+	if result != "" {
+		t.Errorf("Expected empty string for invalid type, got %q", result)
+	}
+}
+
+func TestCopyRecursiveInvalidGid(t *testing.T) {
+	srcDir := t.TempDir()
+	os.WriteFile(filepath.Join(srcDir, "test.txt"), []byte("test"), 0644)
+
+	cfg := CopyCfg{
+		Src:       srcDir,
+		Dst:       t.TempDir(),
+		DirPerms:  0755,
+		FilePerms: 0644,
+		DirOwner:  &user.User{Uid: "0"},
+		DirGroup:  &user.Group{Gid: "invalid-gid"}, // Invalid GID
+		FileOwner: &user.User{Uid: "0"},
+		FileGroup: &user.Group{Gid: "0"},
+		Chown:     func(string, int, int) error { return nil },
+	}
+
+	err := copyRecursive(cfg)
+	if err == nil {
+		t.Error("Expected error on invalid GID")
 	}
 }

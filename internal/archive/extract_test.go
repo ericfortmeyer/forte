@@ -340,3 +340,246 @@ func createTestTarGzWithPermissions(path, name, content string, mode int64) erro
 
 	return tarWriter.Close()
 }
+
+// TestExtract_ArchiveNotFound tests the SkippableError for missing archives.
+func TestExtract_ArchiveNotFound(t *testing.T) {
+	destDir := t.TempDir()
+	err := Extract("/nonexistent/archive.tar.gz", destDir)
+
+	if err == nil {
+		t.Fatal("Extract() should have failed for missing file")
+	}
+
+	// Verify it's a SkippableError
+	if !IsSkippable(err) {
+		t.Errorf("expected SkippableError, got %T: %v", err, err)
+	}
+}
+
+// TestExtract_CorruptedGzip tests handling of corrupted gzip data.
+func TestExtract_CorruptedGzip(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// Create file with valid gzip magic bytes but corrupted data
+	corruptFile := filepath.Join(srcDir, "corrupt.tar.gz")
+	if err := os.WriteFile(corruptFile, []byte{0x1f, 0x8b, 0x08, 0x00, 0xFF, 0xFF}, 0644); err != nil {
+		t.Fatalf("failed to create corrupt file: %v", err)
+	}
+
+	err := Extract(corruptFile, destDir)
+	if err == nil {
+		t.Fatal("Extract() should have failed for corrupted gzip")
+	}
+	if err.Error() != "invalid gzip format: EOF" {
+		t.Logf("got error: %v", err)
+	}
+}
+
+// TestExtract_SymlinksInArchive tests handling of symlinks (unsupported type).
+func TestExtract_SymlinksInArchive(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	tarGzPath := filepath.Join(srcDir, "symlink.tar.gz")
+	if err := createTestTarGzWithSymlink(tarGzPath, "target.txt", "link.txt"); err != nil {
+		t.Fatalf("failed to create test archive: %v", err)
+	}
+
+	// Extract should succeed but skip the symlink
+	if err := Extract(tarGzPath, destDir); err != nil {
+		t.Fatalf("Extract() failed: %v", err)
+	}
+
+	// Verify target file wasn't created (symlinks are ignored)
+	linkPath := filepath.Join(destDir, "link.txt")
+	if _, err := os.Stat(linkPath); err == nil {
+		t.Error("symlink should have been skipped")
+	}
+}
+
+// TestExtract_EmptyFilesInArchive tests extraction of empty files.
+func TestExtract_EmptyFilesInArchive(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	tarGzPath := filepath.Join(srcDir, "empty.tar.gz")
+	if err := createTestTarGz(tarGzPath, map[string]string{
+		"empty.txt": "",
+		"data.txt":  "content",
+	}); err != nil {
+		t.Fatalf("failed to create test archive: %v", err)
+	}
+
+	if err := Extract(tarGzPath, destDir); err != nil {
+		t.Fatalf("Extract() failed: %v", err)
+	}
+
+	// Verify empty file exists
+	emptyPath := filepath.Join(destDir, "empty.txt")
+	if info, err := os.Stat(emptyPath); err != nil || info.Size() != 0 {
+		t.Error("empty file not extracted correctly")
+	}
+}
+
+// TestExtract_DeepNesting tests deeply nested directory structures.
+func TestExtract_DeepNesting(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// Create a deeply nested path
+	deepPath := "a/b/c/d/e/f/g/h/file.txt"
+	tarGzPath := filepath.Join(srcDir, "deep.tar.gz")
+	if err := createTestTarGz(tarGzPath, map[string]string{
+		deepPath: "deep content",
+	}); err != nil {
+		t.Fatalf("failed to create test archive: %v", err)
+	}
+
+	if err := Extract(tarGzPath, destDir); err != nil {
+		t.Fatalf("Extract() failed: %v", err)
+	}
+
+	// Verify file exists at deep path
+	filePath := filepath.Join(destDir, deepPath)
+	if content, err := os.ReadFile(filePath); err != nil || string(content) != "deep content" {
+		t.Error("deeply nested file not extracted correctly")
+	}
+}
+
+// TestExtract_MixedDirectoriesAndFiles tests archives with both dirs and files.
+func TestExtract_MixedDirectoriesAndFiles(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	tarGzPath := filepath.Join(srcDir, "mixed.tar.gz")
+	if err := createTestTarGz(tarGzPath, map[string]string{
+		"dir1/file1.txt": "content1",
+		"dir2/file2.txt": "content2",
+		"root.txt":       "root",
+	}); err != nil {
+		t.Fatalf("failed to create test archive: %v", err)
+	}
+
+	if err := Extract(tarGzPath, destDir); err != nil {
+		t.Fatalf("Extract() failed: %v", err)
+	}
+
+	// Verify all files exist
+	files := []string{
+		filepath.Join(destDir, "dir1", "file1.txt"),
+		filepath.Join(destDir, "dir2", "file2.txt"),
+		filepath.Join(destDir, "root.txt"),
+	}
+	for _, f := range files {
+		if _, err := os.Stat(f); err != nil {
+			t.Errorf("file %s not extracted", f)
+		}
+	}
+}
+
+// TestValidateGzipMagic_MissingFile tests that missing file returns SkippableError.
+func TestValidateGzipMagic_MissingFile(t *testing.T) {
+	err := validateGzipMagic("/nonexistent/path/file.tar.gz")
+
+	if err == nil {
+		t.Fatal("validateGzipMagic should fail for missing file")
+	}
+
+	if !IsSkippable(err) {
+		t.Errorf("expected SkippableError for missing file, got %T: %v", err, err)
+	}
+
+	if err.Error() != "archive not found" {
+		t.Errorf("expected 'archive not found', got %q", err.Error())
+	}
+}
+
+// TestValidateGzipMagic_PermissionDenied tests that permission errors are not skippable.
+func TestValidateGzipMagic_PermissionDenied(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("skipping permission test when running as root")
+	}
+
+	srcDir := t.TempDir()
+	filePath := filepath.Join(srcDir, "noaccess.tar.gz")
+
+	// Create a file and remove read permissions
+	if err := os.WriteFile(filePath, []byte{0x1f, 0x8b}, 0000); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+	defer os.Chmod(filePath, 0644) // restore for cleanup
+
+	err := validateGzipMagic(filePath)
+	if err == nil {
+		t.Fatal("validateGzipMagic should fail for permission denied")
+	}
+
+	// Permission errors should NOT be skippable
+	if IsSkippable(err) {
+		t.Error("permission denied should not be SkippableError")
+	}
+}
+
+// TestIsPathSafe_EdgeCases tests additional edge cases.
+func TestIsPathSafe_EdgeCases(t *testing.T) {
+	destDir := t.TempDir()
+
+	tests := []struct {
+		name       string
+		targetPath string
+		wantSafe   bool
+	}{
+		{"relative path dot", filepath.Join(destDir, "."), true},
+		{"relative path dot-slash", filepath.Join(destDir, "./file.txt"), true},
+		{"same directory", destDir, true},
+		{"double dot escape", filepath.Join(destDir, "file", "..", "..", "etc"), false},
+		{"absolute etc passwd", "/etc/passwd", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			safe := isPathSafe(destDir, tt.targetPath)
+			if safe != tt.wantSafe {
+				t.Errorf("isPathSafe() = %v, want %v", safe, tt.wantSafe)
+			}
+		})
+	}
+}
+
+// Helper: create tar.gz with symlink
+func createTestTarGzWithSymlink(path, target, linkName string) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	gzipWriter := gzip.NewWriter(file)
+	defer gzipWriter.Close()
+
+	tarWriter := tar.NewWriter(gzipWriter)
+	defer tarWriter.Close()
+
+	// Add target file
+	header := &tar.Header{
+		Name: target,
+		Size: int64(len("target content")),
+		Mode: 0644,
+	}
+	if err := tarWriter.WriteHeader(header); err != nil {
+		return err
+	}
+	if _, err := tarWriter.Write([]byte("target content")); err != nil {
+		return err
+	}
+
+	// Add symlink
+	linkHeader := &tar.Header{
+		Name:     linkName,
+		Linkname: target,
+		Typeflag: tar.TypeSymlink,
+		Mode:     0755,
+	}
+	return tarWriter.WriteHeader(linkHeader)
+}
