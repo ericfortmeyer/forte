@@ -43,13 +43,10 @@ jobs:
 
       - name: Unit Tests with Coverage
         run: make test-coverage
-
-      - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v7
+      - name: Send coverage
+        uses: shogo82148/actions-goveralls@v1
         with:
-          files: ./coverage.out
-          fail_ci_if_error: true
-
+          path-to-profile: covprofile
   examples:
     name: Example Deployments
     runs-on: ubuntu-latest
