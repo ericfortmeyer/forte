@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 final class SimpleServer {
     private static final int PORT = 8000;
     private static final String ROOT_PATH = "/";
-    private static final String RESPONSE_BODY = "{\"status\":\"ok\"}";
+    private static final String RESPONSE_BODY = "{\"status\":\"ok\",\"app\":\"example-java-app\"}";
 
     public static void main(String[] args) throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);

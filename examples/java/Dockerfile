@@ -9,10 +9,11 @@ FROM eclipse-temurin:21-jre-alpine
 
 COPY --from=forte-example-builder /build/bin/forte /usr/local/bin/forte
 COPY --from=javabuilder /build/server.jar /tmp/java-app/server.jar
-RUN adduser -HDSG www-data www-data
-RUN forte deploy java-app www-data
+RUN ["adduser", "-HDSG", "www-data", "www-data"]
+RUN ["forte", "deploy", "java-app", "www-data"]
 
 USER www-data
 EXPOSE 8000
 
-ENTRYPOINT ["java", "-jar", "/srv/java-app/server.jar"]
+ENTRYPOINT ["java"]
+CMD ["-jar", "/srv/java-app/server.jar"]
