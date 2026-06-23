@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -28,30 +30,92 @@ const (
 	archiveExt              = ".tar.gz"
 )
 
+type userValidator func(username string) (*user.User, error)
+type archiveInterface interface {
+	Extract(tarGzPath string, destDir string) error
+	IsSkippable(err error) bool
+}
+type deployInterface interface {
+	Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc) error
+	ResolveSrc(srcRoot string, appName string) ([]deploy.Deployment, error)
+}
+
+type archiveProxy struct{}
+
+func (a archiveProxy) Extract(tarGzPath string, destDir string) error {
+	return archive.Extract(tarGzPath, destDir)
+}
+func (a archiveProxy) IsSkippable(err error) bool { return archive.IsSkippable(err) }
+
+type deployProxy struct{}
+
+func (d deployProxy) ResolveSrc(srcRoot string, appName string) ([]deploy.Deployment, error) {
+	return deploy.ResolveSrc(srcRoot, appName)
+}
+
+func (d deployProxy) Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc) error {
+	return deploy.Deploy(cfg, cleanup)
+}
+
 func main() {
-	cmd := helpCmd
-	if len(os.Args) > 1 {
-		cmd = os.Args[1]
+	Run(
+		os.Args[1:],
+		archiveProxy{},
+		deployProxy{},
+		user.Lookup,
+		exit,
+		&bytes.Buffer{},
+	)
+}
+
+func exit(i int) {
+	os.Exit(i)
+}
+
+func Run(
+	args []string,
+	a archiveInterface,
+	d deployInterface,
+	userValidator userValidator,
+	exit func(int),
+	out io.Writer,
+) {
+	if len(args) < 1 {
+		if _, err := out.Write([]byte(help.Help())); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		}
+		exit(1)
+		return
 	}
+
+	cmd := args[0]
 
 	switch cmd {
 	case deployCmd:
-		if len(os.Args) < 3 {
-			fmt.Println("Application name required")
-			os.Exit(1)
+		if len(args) < 2 {
+			if _, err := out.Write([]byte("Application name required")); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+			}
+			exit(1)
+			return
 		}
-		appName := os.Args[2]
-
-		if len(os.Args) < 4 {
-			fmt.Println("Web service user required")
-			os.Exit(1)
+		if len(args) < 3 {
+			if _, err := out.Write([]byte("Web service user required")); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+			}
+			exit(1)
+			return
 		}
-		webServerUser := os.Args[3]
+		appName := args[1]
+		webServerUser := args[2]
 
-		validUser, err := user.Lookup(webServerUser)
+		validUser, err := userValidator(webServerUser)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: user %q not found\n", webServerUser)
-			os.Exit(1)
+			if _, err := out.Write([]byte("Error: user not found " + webServerUser)); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+			}
+			exit(1)
+			return
 		}
 
 		archiveNames := []string{
@@ -63,49 +127,64 @@ func main() {
 		for _, name := range archiveNames {
 			tarGzPath := filepath.Join(srcRoot, name+archiveExt)
 			destDir := filepath.Join(srcRoot, name)
-			if err := archive.Extract(tarGzPath, destDir); err != nil {
-				if !archive.IsSkippable(err) {
-					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-					os.Exit(1)
+			if err := a.Extract(tarGzPath, destDir); err != nil {
+				if !a.IsSkippable(err) {
+					if _, err := out.Write([]byte("Error: " + err.Error())); err != nil {
+						fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+					}
+					exit(1)
+					return
 				} // IsSkippable errors are silently ignored
 			}
 		}
 
-		deployments, err := deploy.ResolveSrc(srcRoot, appName)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
-			os.Exit(1)
+		if deployments, err := d.ResolveSrc(srcRoot, appName); err != nil {
+			if _, err := out.Write([]byte("Error: " + err.Error())); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+			}
+			exit(1)
+			return
+		} else {
+			for _, deployment := range deployments {
+				cfg := deploy.DeployConfig{
+					AppName:       appName,
+					Deployment:    deployment,
+					WebServerUser: validUser,
+					DirPerms:      dirPerms,
+					FilePerms:     filePerms,
+					Chown:         deploy.ChownProduction,
+					DestRoot:      destRoot,
+					ConfigDest:    fhs.ConfigDest(),   // TODO: support config file / env var override in future version
+					WebSvcDest:    fhs.WebSvcDest(),   // TODO: support config file / env var override in future version
+					SvcAssetDest:  fhs.SvcAssetDest(), // TODO: support config file / env var override in future version
+				}
+
+				if err := d.Deploy(cfg, deploy.CleanupProduction); err != nil {
+					if _, err := out.Write([]byte("Error: " + err.Error())); err != nil {
+						fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+					}
+					exit(1)
+					return
+				}
+			}
 		}
 
-		for _, deployment := range deployments {
-			cfg := deploy.DeployConfig{
-				AppName:       appName,
-				Deployment:    deployment,
-				WebServerUser: validUser,
-				DirPerms:      dirPerms,
-				FilePerms:     filePerms,
-				Chown:         deploy.ChownProduction,
-				DestRoot:      destRoot,
-				ConfigDest:    fhs.ConfigDest(),   // TODO: support config file / env var override in future version
-				WebSvcDest:    fhs.WebSvcDest(),   // TODO: support config file / env var override in future version
-				SvcAssetDest:  fhs.SvcAssetDest(), // TODO: support config file / env var override in future version
-			}
-
-			if err := deploy.Deploy(cfg, deploy.CleanupProduction); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: deployment failed: %v\n", err)
-				os.Exit(1)
-			}
-		}
-
-		os.Exit(0)
 	case helpCmd:
-		fmt.Println(help.Help())
-		os.Exit(0)
+		if _, err := out.Write([]byte(help.Help())); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		}
+		exit(0)
+		return
 	case versionCmd:
-		fmt.Println(forteversion.Version())
-		os.Exit(0)
+		if _, err := out.Write([]byte(forteversion.Version())); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		}
+		exit(0)
+		return
 	default:
-		fmt.Println(help.Help())
-		os.Exit(1)
+		if _, err := out.Write([]byte("Error: Invalid subcommand: " + cmd + ". Valid subcommands are deploy, version, and help.")); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		}
+		exit(1)
 	}
 }
