@@ -12,6 +12,25 @@ import (
 	forteversion "github.com/ericfortmeyer/forte/internal/version"
 )
 
+type failingWriter struct{}
+
+func (f failingWriter) Write(p []byte) (n int, err error) {
+	return 0, errors.New("write failed")
+}
+
+type mockDeployMultiple struct{}
+
+func (a mockDeployMultiple) ResolveSrc(srcRoot string, appName string) ([]deploy.Deployment, error) {
+	return []deploy.Deployment{
+		{Type: deploy.DeploymentTypeConfig, Src: "/"},
+		{Type: deploy.DeploymentTypeAssets, Src: "/"},
+	}, nil
+}
+
+func (d mockDeployMultiple) Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc) error {
+	return nil
+}
+
 type mockArchiveIsNotSkippableError struct{}
 
 func (a mockArchiveIsNotSkippableError) Extract(tarGzPath string, destDir string) error {
@@ -278,5 +297,61 @@ func TestOutputsErrorIfDeploySubcommandIsGivenAndDeployErrorOccurs(t *testing.T)
 
 	if output.String() != "Error: Deployment failed" {
 		t.Fatalf("Should have printed Error message but printed: %s", output)
+	}
+}
+
+func TestSuccessfulDeployment(t *testing.T) {
+	var exitCode int
+	mockExit := func(code int) { exitCode = code }
+	output := &bytes.Buffer{}
+	mockUserValidator := func(username string) (*user.User, error) {
+		return &user.User{Username: "www-data"}, nil
+	}
+
+	Run(
+		[]string{"deploy", "myApp", "www-data"},
+		mockArchiveNoop{},
+		mockDeployNoop{},
+		mockUserValidator,
+		mockExit,
+		output,
+	)
+
+	if exitCode != 0 {
+		t.Fatalf("Should have exited with code 0, got %d", exitCode)
+	}
+}
+
+func TestErrorHandlingWhenHelpWriteFails(t *testing.T) {
+	var exitCode int
+	mockExit := func(code int) { exitCode = code }
+	noopUserValidator := func(username string) (*user.User, error) { return nil, nil }
+
+	Run([]string{}, mockArchiveNoop{}, mockDeployNoop{}, noopUserValidator, mockExit, failingWriter{})
+
+	if exitCode != 1 {
+		t.Fatal("Should have exited with code 1")
+	}
+}
+
+func TestSuccessfulDeploymentWithMultipleDeployments(t *testing.T) {
+	var exitCode int
+	mockExit := func(code int) { exitCode = code }
+	output := &bytes.Buffer{}
+	mockUserValidator := func(username string) (*user.User, error) {
+		return &user.User{Username: "www-data"}, nil
+	}
+
+	Run(
+		[]string{"deploy", "myApp", "www-data"},
+		mockArchiveNoop{},
+		mockDeployMultiple{},
+		mockUserValidator,
+		mockExit,
+		output,
+	)
+
+	if exitCode != 0 {
+		t.Fatalf("Should have exited with code 0, got %d", exitCode)
 	}
 }
