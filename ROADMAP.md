@@ -4,23 +4,6 @@
 
 ---
 
-## 0.3.0: Developer Experience
-
-### 0.3.0 Features
-
-- **Enhanced Documentation** – FHS rationale, web server templates (Apache, Caddy), framework-specific guides
-- **Additional Examples** – Ruby (Rack), Java, and other common runtimes
-
-### 0.3.0 Why This Matters
-
-Operators need confidence in what `forte` will do before execution. Mutli-langauge example deployments and clearer docs reduce deployment anxiety.
-
-#### Dry Run Deferred
-
-Safety through reliability, not simulation. 0.3.0 focuses on bulletproof deployment and clear feedback rather than preview modes. Once real users report specific pain points, feature requests will be weighted against the core philosophy.
-
----
-
 ## 0.4.0: Distribution & Reach
 
 ### 0.4.0 Features
@@ -46,9 +29,15 @@ The following features are deferred until broader adoption and operator feedback
 
 ---
 
+## Why is dry run deferred?
+
+The goal is safety through reliability, not simulation. 0.3.0 focuses on bulletproof deployment and clear feedback rather than preview modes. Once real users report specific pain points, feature requests will be weighted against the core philosophy.
+
+---
+
 ## Current Status
 
-**Version:** 0.2.0
+**Version:** 0.3.0
 **Support:** Static sites, CGI-based, and runtime dependent deployments (e.g., PHP)
 
 - Java
@@ -61,10 +50,11 @@ The following features are deferred until broader adoption and operator feedback
 | -------- | ------------- |
 | `/tmp/<appname>` | `/srv/<appname>` |
 | `/tmp/<appname>-config` | `/etc/<appname>` |
-| `/tmp/<appname>-assets` *(0.2.0)* | `/srv/assets/<appname>/` *(0.2.0)* |
+| `/tmp/<appname>-assets` | `/srv/assets/<appname>/` |
 
 ---
 
 ## How to Contribute
 
-Feedback on the 0.2.0 design is welcome. See the [GitHub Epic]([#9](https://github.com/ericfortmeyer/forte/issues/9)) for discussion on static assets deployment.
+- Feedback is welcome
+- Please submit a pull request. See [CONTRIBUTING.md](./CONTRIBUTING.md)

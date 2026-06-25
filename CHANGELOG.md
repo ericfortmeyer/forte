@@ -3,6 +3,19 @@
 All notable changes to this project are documented in this file.
 This project uses [Semantic Versioning](https://semver.org/)
 
+## 0.3.0 (2026-06-25)
+
+### Feat
+
+- log output of deployment and extraction (#42)
+- **ui**: add color and improve messages (#41)
+- **examples**: add java app deployment example
+
+### Refactor
+
+- move constants and interfaces to related modules (#40)
+- **main**: remove over-the-top error checking
+
 ## 0.2.0 (2026-06-20)
 
 ### Feat

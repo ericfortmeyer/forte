@@ -41,7 +41,7 @@ Result:
 
 To deploy assets, place them in `/tmp/myapp-assets` before running `deploy`. `/tmp/myapp-assets.tar.gz` is also a supported deployment source.
 
-## Minimal API (0.2.0)
+## Minimal API
 
 Usage:
 
@@ -56,7 +56,7 @@ usage: forte <command> [<args>]
 
 Behavior summary:
 
-- No configuration or flags in 0.2.0.
+- No configuration or flags.
 - Expected source layout: `/tmp/<app>`, `/tmp/<app>-config`, and `/tmp/<app>-assets` or `/tmp/<app>.tar.gz`, `/tmp/<app>-config.tar.gz`, and `/tmp/<app>-assets.tar.gz`.
 - Mapping:
   - `/tmp/<app>` → `/srv/<app>`
@@ -91,9 +91,6 @@ Behavior summary:
 
 Planned items and investigations to address current limitations:
 
-- **✓ Static assets deployment** (v0.2.0) — Assets under `/tmp/<app>-assets` are deployed to `/srv/assets/<app>/`
-- Extract and deploy a tarball (v0.2.0)
-- Add --dry-run and a verbose mode to preview changes without writing.
 - Fix permission-only sync behavior (decide whether to treat permission diffs as changes, or offer an explicit flag to sync perms).
 - Implement safe rollback/transactional deploys or an atomic swap strategy to avoid partial state on failure.
 - Optional: cleanup step (configurable) to remove or archive the source after successful deploy.
