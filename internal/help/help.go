@@ -1,5 +1,7 @@
 package help
 
+const Command = "help"
+
 func Help() string {
 	return `usage: forte <command> [<args>]
 

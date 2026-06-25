@@ -16,6 +16,7 @@ const (
 	DeploymentTypeAssets
 )
 const (
+	Command                 = "deploy"
 	DeploymentTypeSeparator = "-"
 	ConfigSuffix            = "config"
 	AssetsSuffix            = "assets"
@@ -74,6 +75,10 @@ type PathResolver struct {
 	configDir   string
 	webSrvDir   string
 	srvAssetDir string
+}
+type DeployInterface interface {
+	Deploy(cfg DeployConfig, cleanup CleanupFunc) error
+	ResolveSrc(srcRoot string, appName string) ([]Deployment, error)
 }
 
 func (r *RootResolver) ConfigDir(appName string, p *PathResolver) string {
