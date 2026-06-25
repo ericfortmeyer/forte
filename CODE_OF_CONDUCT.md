@@ -1,6 +1,6 @@
 # Code of Conduct
 
-We want Forte to be a welcoming, respectful project for everyone. Be kind and professional in interactions; do not engage in harassment, discrimination, or abusive behavior. Report violations to: REPLACE_WITH_YOUR_EMAIL or open a private issue if preferred.
+We want Forte to be a welcoming, respectful project for everyone. Be kind and professional in interactions; do not engage in harassment, discrimination, or abusive behavior. Report violations to: <e.fortmeyer01@gmail.com> or open a private issue if preferred.
 
 Examples of unacceptable behavior:
 
