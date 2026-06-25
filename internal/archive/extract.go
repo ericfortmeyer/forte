@@ -41,7 +41,7 @@ func Extract(tarGzPath, destDir string, out io.Writer) error {
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
-			fmt.Fprintln(out, ui.Warn("failed to close file:")+"%v", err)
+			_, _ = fmt.Fprintln(out, ui.Warn("failed to close file:")+"%v", err)
 		}
 	}()
 
@@ -52,12 +52,12 @@ func Extract(tarGzPath, destDir string, out io.Writer) error {
 	}
 	defer func() {
 		if err := gzipReader.Close(); err != nil {
-			fmt.Fprintln(out, ui.Warn("failed to close file:")+"%v", err)
+			_, _ = fmt.Fprintln(out, ui.Warn("failed to close file:")+"%v", err)
 		}
 	}()
 
 	// Extract tar entries
-	fmt.Fprintln(out, ui.Working("Unpacking..."))
+	_, _ = fmt.Fprintln(out, ui.Working("Unpacking..."))
 	tarReader := tar.NewReader(gzipReader)
 	start := time.Now()
 	for {
@@ -108,7 +108,7 @@ func Extract(tarGzPath, destDir string, out io.Writer) error {
 		}
 	}
 
-	fmt.Fprintln(out, ui.Success("Unpacked in"), time.Since(start))
+	_, _ = fmt.Fprintln(out, ui.Success("Unpacked in"), time.Since(start))
 
 	return nil
 }
