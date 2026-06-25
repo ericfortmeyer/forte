@@ -17,6 +17,7 @@ const (
 )
 const (
 	Command                 = "deploy"
+	Example                 = "forte deploy [app-name] [user]"
 	DeploymentTypeSeparator = "-"
 	ConfigSuffix            = "config"
 	AssetsSuffix            = "assets"
