@@ -11,33 +11,18 @@ import (
 	"github.com/ericfortmeyer/forte/internal/deploy"
 	"github.com/ericfortmeyer/forte/internal/fhs"
 	"github.com/ericfortmeyer/forte/internal/help"
+	"github.com/ericfortmeyer/forte/internal/version"
 	forteversion "github.com/ericfortmeyer/forte/internal/version"
 )
 
-const ()
 const (
-	srcRoot                 = "/tmp"
-	destRoot                = "" // an empty string resolves to /
-	helpCmd                 = "help"
-	deployCmd               = "deploy"
-	versionCmd              = "version"
-	dirPerms                = 0750
-	filePerms               = 0640
-	deploymentTypeSeparator = "-"
-	configSuffix            = "config"
-	assetsSuffix            = "assets"
-	archiveExt              = ".tar.gz"
+	srcRoot   = "/tmp"
+	destRoot  = "" // an empty string resolves to /
+	dirPerms  = 0750
+	filePerms = 0640
 )
 
 type userValidator func(username string) (*user.User, error)
-type archiveInterface interface {
-	Extract(tarGzPath string, destDir string) error
-	IsSkippable(err error) bool
-}
-type deployInterface interface {
-	Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc) error
-	ResolveSrc(srcRoot string, appName string) ([]deploy.Deployment, error)
-}
 
 type archiveProxy struct{}
 
@@ -73,8 +58,8 @@ func exit(i int) {
 
 func Run(
 	args []string,
-	a archiveInterface,
-	d deployInterface,
+	a archive.ArchiveInterface,
+	d deploy.DeployInterface,
 	userValidator userValidator,
 	exit func(int),
 	out io.Writer,
@@ -88,7 +73,7 @@ func Run(
 	cmd := args[0]
 
 	switch cmd {
-	case deployCmd:
+	case deploy.Command:
 		if len(args) < 2 {
 			_, _ = out.Write([]byte("Application name required"))
 			exit(1)
@@ -111,12 +96,12 @@ func Run(
 
 		archiveNames := []string{
 			appName,
-			appName + deploymentTypeSeparator + configSuffix,
-			appName + deploymentTypeSeparator + assetsSuffix,
+			appName + deploy.DeploymentTypeSeparator + deploy.ConfigSuffix,
+			appName + deploy.DeploymentTypeSeparator + deploy.AssetsSuffix,
 		}
 
 		for _, name := range archiveNames {
-			tarGzPath := filepath.Join(srcRoot, name+archiveExt)
+			tarGzPath := filepath.Join(srcRoot, name+archive.TarballExt)
 			destDir := filepath.Join(srcRoot, name)
 			if err := a.Extract(tarGzPath, destDir); err != nil {
 				if !a.IsSkippable(err) {
@@ -154,11 +139,11 @@ func Run(
 			}
 		}
 
-	case helpCmd:
+	case help.Command:
 		_, _ = out.Write([]byte(help.Help()))
 		exit(0)
 		return
-	case versionCmd:
+	case version.Command:
 		_, _ = out.Write([]byte(forteversion.Version()))
 		exit(0)
 		return

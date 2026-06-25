@@ -11,6 +11,13 @@ import (
 	"strings"
 )
 
+const TarballExt = ".tar.gz"
+
+type ArchiveInterface interface {
+	Extract(tarGzPath string, destDir string) error
+	IsSkippable(err error) bool
+}
+
 // Extract decompresses and extracts a .tar.gz file to the destination directory.
 // It validates the file format using magic bytes before proceeding.
 func Extract(tarGzPath, destDir string) error {

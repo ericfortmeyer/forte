@@ -2,10 +2,13 @@ package version
 
 import "fmt"
 
-const name = "forte"
+const (
+	Command  = "version"
+	toolName = "forte"
+)
 
 var version = "dev"
 
 func Version() string {
-	return fmt.Sprintf("%s version %s", name, version)
+	return fmt.Sprintf("%s version %s", toolName, version)
 }
