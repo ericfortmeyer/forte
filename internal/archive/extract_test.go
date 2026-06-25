@@ -600,3 +600,49 @@ func createTestTarGzWithSymlink(path, target, linkName string) error {
 	}
 	return tarWriter.WriteHeader(linkHeader)
 }
+
+func TestExtract_InvalidGzipMagic(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// Create file with wrong magic bytes
+	fakePath := filepath.Join(srcDir, "fake.tar.gz")
+	os.WriteFile(fakePath, []byte{0xFF, 0xD8}, 0644) // JPEG magic bytes
+
+	err := Extract(fakePath, destDir)
+	if !IsSkippable(err) {
+		t.Fatalf("expected skippable error, got: %v", err)
+	}
+}
+
+func TestExtract_GzipCorruption(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// Valid magic bytes but corrupted data
+	corruptPath := filepath.Join(srcDir, "corrupt.tar.gz")
+	os.WriteFile(corruptPath, []byte{0x1f, 0x8b, 0xFF, 0xFF, 0xFF}, 0644)
+
+	err := Extract(corruptPath, destDir)
+	if err == nil {
+		t.Fatal("expected error for corrupted gzip")
+	}
+}
+
+func TestExtract_TarCorruption(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+
+	// Valid gzip but corrupted tar stream
+	tarPath := filepath.Join(srcDir, "corrupt.tar.gz")
+	file, _ := os.Create(tarPath)
+	gzWriter := gzip.NewWriter(file)
+	gzWriter.Write([]byte("this is not valid tar data"))
+	gzWriter.Close()
+	file.Close()
+
+	err := Extract(tarPath, destDir)
+	if err == nil {
+		t.Fatal("expected error for corrupted tar")
+	}
+}
