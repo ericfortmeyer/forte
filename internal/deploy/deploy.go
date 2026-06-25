@@ -125,25 +125,25 @@ func Deploy(cfg DeployConfig, cleanup CleanupFunc, out io.Writer) error {
 	switch cfg.Deployment.Type {
 	case DeploymentTypeConfig:
 		start := time.Now()
-		fmt.Fprintln(out, ui.Working("Installing config..."))
+		_, _ = fmt.Fprintln(out, ui.Working("Installing config..."))
 		if cfgErr := installConfig(cfg, r, p); cfgErr != nil {
 			return cfgErr
 		}
-		fmt.Fprintln(out, ui.Working("Installed config in"), time.Since(start))
+		_, _ = fmt.Fprintln(out, ui.Working("Installed config in"), time.Since(start))
 	case DeploymentTypeService:
 		start := time.Now()
-		fmt.Fprintln(out, ui.Working("Installing service data..."))
+		_, _ = fmt.Fprintln(out, ui.Working("Installing service data..."))
 		if svcErr := installWebService(cfg, r, p); svcErr != nil {
 			return svcErr
 		}
-		fmt.Fprintln(out, ui.Working("Installed service data in"), time.Since(start))
+		_, _ = fmt.Fprintln(out, ui.Working("Installed service data in"), time.Since(start))
 	case DeploymentTypeAssets:
 		start := time.Now()
-		fmt.Fprintln(out, ui.Working("Installing service assets..."))
+		_, _ = fmt.Fprintln(out, ui.Working("Installing service assets..."))
 		if svcErr := installServiceAsset(cfg, r, p); svcErr != nil {
 			return svcErr
 		}
-		fmt.Fprintln(out, ui.Working("Installed service assets in"), time.Since(start))
+		_, _ = fmt.Fprintln(out, ui.Working("Installed service assets in"), time.Since(start))
 	}
 
 	if cleanup != nil {
@@ -352,7 +352,7 @@ func copyRecursive(cfg CopyCfg) error {
 		}
 		defer func() {
 			if err := srcFile.Close(); err != nil {
-				fmt.Printf("warning: failed to close file: %v", err)
+				_, _ = fmt.Printf("warning: failed to close file: %v", err)
 			}
 		}()
 
@@ -362,7 +362,7 @@ func copyRecursive(cfg CopyCfg) error {
 		}
 		defer func() {
 			if err := dstFile.Close(); err != nil {
-				fmt.Printf("warning: failed to close file: %v", err)
+				_, _ = fmt.Printf("warning: failed to close file: %v", err)
 			}
 		}()
 
