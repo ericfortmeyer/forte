@@ -11,7 +11,6 @@ import (
 	"github.com/ericfortmeyer/forte/internal/deploy"
 	"github.com/ericfortmeyer/forte/internal/fhs"
 	"github.com/ericfortmeyer/forte/internal/help"
-	"github.com/ericfortmeyer/forte/internal/version"
 	forteversion "github.com/ericfortmeyer/forte/internal/version"
 )
 
@@ -143,7 +142,7 @@ func Run(
 		_, _ = out.Write([]byte(help.Help()))
 		exit(0)
 		return
-	case version.Command:
+	case forteversion.Command:
 		_, _ = out.Write([]byte(forteversion.Version()))
 		exit(0)
 		return
