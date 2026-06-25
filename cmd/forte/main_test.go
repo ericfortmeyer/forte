@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"io"
 	"os/user"
 	"strings"
 	"testing"
@@ -27,13 +28,13 @@ func (a mockDeployMultiple) ResolveSrc(srcRoot string, appName string) ([]deploy
 	}, nil
 }
 
-func (d mockDeployMultiple) Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc) error {
+func (d mockDeployMultiple) Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc, out io.Writer) error {
 	return nil
 }
 
 type mockArchiveIsNotSkippableError struct{}
 
-func (a mockArchiveIsNotSkippableError) Extract(tarGzPath string, destDir string) error {
+func (a mockArchiveIsNotSkippableError) Extract(tarGzPath, destDir string, out io.Writer) error {
 	return errors.New("Is not skippable")
 }
 func (a mockArchiveIsNotSkippableError) IsSkippable(err error) bool { return false }
@@ -43,7 +44,7 @@ type mockDeployNoop struct{}
 func (a mockDeployNoop) ResolveSrc(srcRoot string, appName string) ([]deploy.Deployment, error) {
 	return []deploy.Deployment{}, nil
 }
-func (d mockDeployNoop) Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc) error {
+func (d mockDeployNoop) Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc, out io.Writer) error {
 	return nil
 }
 
@@ -52,7 +53,7 @@ type mockDeployResolveSrcFailed struct{}
 func (a mockDeployResolveSrcFailed) ResolveSrc(srcRoot string, appName string) ([]deploy.Deployment, error) {
 	return []deploy.Deployment{}, errors.New("Deployment src resolution failed")
 }
-func (d mockDeployResolveSrcFailed) Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc) error {
+func (d mockDeployResolveSrcFailed) Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc, out io.Writer) error {
 	return nil
 }
 
@@ -66,13 +67,13 @@ func (a mockDeploymentFailed) ResolveSrc(srcRoot string, appName string) ([]depl
 		},
 	}, nil
 }
-func (d mockDeploymentFailed) Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc) error {
+func (d mockDeploymentFailed) Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc, out io.Writer) error {
 	return errors.New("Deployment failed")
 }
 
 type mockArchiveNoop struct{}
 
-func (a mockArchiveNoop) Extract(tarGzPath string, destDir string) error {
+func (a mockArchiveNoop) Extract(tarGzPath, destDir string, out io.Writer) error {
 	return nil
 }
 func (a mockArchiveNoop) IsSkippable(err error) bool { return true }
@@ -319,6 +320,10 @@ func TestSuccessfulDeployment(t *testing.T) {
 
 	if exitCode != 0 {
 		t.Fatalf("Should have exited with code 0, got %d", exitCode)
+	}
+
+	if !strings.Contains(output.String(), "Total:") {
+		t.Fatalf("Should have output total time, got %s", output)
 	}
 }
 
