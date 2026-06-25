@@ -9,18 +9,21 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/ericfortmeyer/forte/internal/ui"
 )
 
 const TarballExt = ".tar.gz"
 
 type ArchiveInterface interface {
-	Extract(tarGzPath string, destDir string) error
+	Extract(tarGzPath string, destDir string, out io.Writer) error
 	IsSkippable(err error) bool
 }
 
 // Extract decompresses and extracts a .tar.gz file to the destination directory.
 // It validates the file format using magic bytes before proceeding.
-func Extract(tarGzPath, destDir string) error {
+func Extract(tarGzPath, destDir string, out io.Writer) error {
 	// Validate magic bytes
 	if err := validateGzipMagic(tarGzPath); err != nil {
 		return err
@@ -38,7 +41,7 @@ func Extract(tarGzPath, destDir string) error {
 	}
 	defer func() {
 		if err := file.Close(); err != nil {
-			fmt.Printf("warning: failed to close file: %v", err)
+			_, _ = fmt.Fprintln(out, ui.Warn("failed to close file:")+"%v", err)
 		}
 	}()
 
@@ -49,12 +52,14 @@ func Extract(tarGzPath, destDir string) error {
 	}
 	defer func() {
 		if err := gzipReader.Close(); err != nil {
-			fmt.Printf("warning: failed to close gzip reader: %v", err)
+			_, _ = fmt.Fprintln(out, ui.Warn("failed to close file:")+"%v", err)
 		}
 	}()
 
 	// Extract tar entries
+	_, _ = fmt.Fprintln(out, ui.Working("Unpacking..."))
 	tarReader := tar.NewReader(gzipReader)
+	start := time.Now()
 	for {
 		header, err := tarReader.Next()
 		if err == io.EOF {
@@ -102,6 +107,8 @@ func Extract(tarGzPath, destDir string) error {
 			}
 		}
 	}
+
+	_, _ = fmt.Fprintln(out, ui.Success("Unpacked in"), time.Since(start))
 
 	return nil
 }

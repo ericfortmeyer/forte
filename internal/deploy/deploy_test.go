@@ -1,10 +1,12 @@
 package deploy
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/ericfortmeyer/forte/internal/fhs"
@@ -116,6 +118,7 @@ func TestDeployInstallsConfig(t *testing.T) {
 	rootDir := t.TempDir()
 	fakeAppName := "fake_app"
 	mockChown := func(filename string, uid, gid int) error { return nil }
+	output := &bytes.Buffer{}
 
 	testUser := &user.User{
 		Uid:      "33", // www-data on many systems
@@ -143,7 +146,7 @@ func TestDeployInstallsConfig(t *testing.T) {
 	}
 	expectedDest := filepath.Join(cfg.DestRoot+cfg.ConfigDest, fakeAppName)
 
-	cfgErr := Deploy(cfg, nil)
+	cfgErr := Deploy(cfg, nil, output)
 
 	if cfgErr != nil && !os.IsExist(cfgErr) {
 		t.Errorf("The expected destination folder %s does not exist", expectedDest)
@@ -160,12 +163,21 @@ func TestDeployInstallsConfig(t *testing.T) {
 			t.Errorf("file mode = %o, want 0640", mode)
 		}
 	}
+
+	if !strings.Contains(output.String(), "Installing config...") {
+		t.Errorf("Expected output: Installing config... but got %s", output)
+	}
+
+	if !strings.Contains(output.String(), "Installed config in") {
+		t.Errorf("Expected output: Installing config... but got %s", output)
+	}
 }
 
 func TestDeployInstallsService(t *testing.T) {
 	rootDir := t.TempDir()
 	fakeAppName := "fake_app"
 	mockChown := func(filename string, uid, gid int) error { return nil }
+	output := &bytes.Buffer{}
 
 	deployment := Deployment{
 		Src:  filepath.Join("testdata", fakeAppName),
@@ -194,7 +206,7 @@ func TestDeployInstallsService(t *testing.T) {
 	destDir := r.WebServiceDir(fakeAppName, p)
 
 	// Deploy
-	if err := Deploy(cfg, nil); err != nil {
+	if err := Deploy(cfg, nil, output); err != nil {
 		t.Fatalf("Deploy failed: %v", err)
 	}
 
@@ -208,12 +220,21 @@ func TestDeployInstallsService(t *testing.T) {
 			t.Errorf("missing file: %s", file)
 		}
 	}
+
+	if !strings.Contains(output.String(), "Installing service data...") {
+		t.Errorf("Expected output: 'Installing service data...' but got %s", output)
+	}
+
+	if !strings.Contains(output.String(), "Installed service data in") {
+		t.Errorf("Expected output: 'Installing service data in' but got %s", output)
+	}
 }
 
 func TestDeployInstallsServiceAssets(t *testing.T) {
 	rootDir := t.TempDir()
 	fakeAppName := "fake_app"
 	mockChown := func(filename string, uid, gid int) error { return nil }
+	output := &bytes.Buffer{}
 
 	deployment := Deployment{
 		Src:  filepath.Join("testdata", fakeAppName+DeploymentTypeSeparator+AssetsSuffix),
@@ -243,7 +264,7 @@ func TestDeployInstallsServiceAssets(t *testing.T) {
 	destDir := r.ServiceAssetDir(fakeAppName, p)
 
 	// Deploy
-	if err := Deploy(cfg, nil); err != nil {
+	if err := Deploy(cfg, nil, output); err != nil {
 		t.Fatalf("Deploy failed: %v", err)
 	}
 
@@ -255,6 +276,14 @@ func TestDeployInstallsServiceAssets(t *testing.T) {
 		if _, err := os.ReadFile(filepath.Join(destDir, file)); err != nil {
 			t.Errorf("missing file: %s", file)
 		}
+	}
+
+	if !strings.Contains(output.String(), "Installing service assets...") {
+		t.Errorf("Expected output: Installing service assets... but got %s", output)
+	}
+
+	if !strings.Contains(output.String(), "Installed service assets in") {
+		t.Errorf("Expected output: 'Installing service assets in' but got %s", output)
 	}
 }
 
@@ -645,7 +674,7 @@ func TestDeployCleanupFailure(t *testing.T) {
 	}
 
 	// Deploy succeeds but cleanup fails
-	err := Deploy(cfg, failingCleanup)
+	err := Deploy(cfg, failingCleanup, &bytes.Buffer{})
 	if err == nil || err.Error() != "cleanup failed" {
 		t.Errorf("Expected cleanup error, got: %v", err)
 	}
@@ -665,7 +694,7 @@ func TestInstallConfigPropagatesError(t *testing.T) {
 		Chown:         func(string, int, int) error { return nil },
 	}
 
-	err := Deploy(cfg, nil)
+	err := Deploy(cfg, nil, &bytes.Buffer{})
 	if err == nil {
 		t.Error("Expected Deploy to propagate installConfig error")
 	}
@@ -685,7 +714,7 @@ func TestInstallServicePropagatesError(t *testing.T) {
 		Chown:         func(string, int, int) error { return nil },
 	}
 
-	err := Deploy(cfg, nil)
+	err := Deploy(cfg, nil, &bytes.Buffer{})
 	if err == nil {
 		t.Error("Expected Deploy to propagate installWebService error")
 	}
@@ -706,7 +735,7 @@ func TestInstallServiceAssetPropagatesError(t *testing.T) {
 		Chown:         func(string, int, int) error { return nil },
 	}
 
-	err := Deploy(cfg, nil)
+	err := Deploy(cfg, nil, &bytes.Buffer{})
 	if err == nil {
 		t.Error("Expected Deploy to propagate installServiceAsset error")
 	}

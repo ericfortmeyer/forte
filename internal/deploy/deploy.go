@@ -8,6 +8,10 @@ import (
 	"os/user"
 	"path/filepath"
 	"strconv"
+	"syscall"
+	"time"
+
+	"github.com/ericfortmeyer/forte/internal/ui"
 )
 
 const (
@@ -78,7 +82,7 @@ type PathResolver struct {
 	srvAssetDir string
 }
 type DeployInterface interface {
-	Deploy(cfg DeployConfig, cleanup CleanupFunc) error
+	Deploy(cfg DeployConfig, cleanup CleanupFunc, out io.Writer) error
 	ResolveSrc(srcRoot string, appName string) ([]Deployment, error)
 }
 
@@ -114,23 +118,32 @@ func NewPathResolver(cfgDir, webSrvDir, srvAssetDir string) *PathResolver {
 	return &PathResolver{configDir: cfgDir, webSrvDir: webSrvDir, srvAssetDir: srvAssetDir}
 }
 
-func Deploy(cfg DeployConfig, cleanup CleanupFunc) error {
+func Deploy(cfg DeployConfig, cleanup CleanupFunc, out io.Writer) error {
 	r := NewRootResolver(cfg.DestRoot)
 	p := NewPathResolver(cfg.ConfigDest, cfg.WebSvcDest, cfg.SvcAssetDest)
 
 	switch cfg.Deployment.Type {
 	case DeploymentTypeConfig:
+		start := time.Now()
+		_, _ = fmt.Fprintln(out, ui.Working("Installing config..."))
 		if cfgErr := installConfig(cfg, r, p); cfgErr != nil {
 			return cfgErr
 		}
+		_, _ = fmt.Fprintln(out, ui.Working("Installed config in"), time.Since(start))
 	case DeploymentTypeService:
+		start := time.Now()
+		_, _ = fmt.Fprintln(out, ui.Working("Installing service data..."))
 		if svcErr := installWebService(cfg, r, p); svcErr != nil {
 			return svcErr
 		}
+		_, _ = fmt.Fprintln(out, ui.Working("Installed service data in"), time.Since(start))
 	case DeploymentTypeAssets:
+		start := time.Now()
+		_, _ = fmt.Fprintln(out, ui.Working("Installing service assets..."))
 		if svcErr := installServiceAsset(cfg, r, p); svcErr != nil {
 			return svcErr
 		}
+		_, _ = fmt.Fprintln(out, ui.Working("Installed service assets in"), time.Since(start))
 	}
 
 	if cleanup != nil {
@@ -184,6 +197,10 @@ func ResolveSrc(srcRoot, appName string) ([]Deployment, error) {
 func installWebService(cfg DeployConfig, r *RootResolver, p *PathResolver) error {
 	dst := r.WebServiceDir(cfg.AppName, p)
 
+	if err := checkDeployableDir(dst); err != nil {
+		return err
+	}
+
 	owners, err := ownersAndGroups(cfg)
 	if err != nil {
 		return err
@@ -211,6 +228,10 @@ func installWebService(cfg DeployConfig, r *RootResolver, p *PathResolver) error
 func installServiceAsset(cfg DeployConfig, r *RootResolver, p *PathResolver) error {
 	dst := r.ServiceAssetDir(cfg.AppName, p)
 
+	if err := checkDeployableDir(dst); err != nil {
+		return err
+	}
+
 	owners, err := ownersAndGroups(cfg)
 	if err != nil {
 		return err
@@ -237,6 +258,10 @@ func installServiceAsset(cfg DeployConfig, r *RootResolver, p *PathResolver) err
 
 func installConfig(cfg DeployConfig, r *RootResolver, p *PathResolver) error {
 	dst := r.ConfigDir(cfg.AppName, p)
+
+	if err := checkDeployableDir(dst); err != nil {
+		return err
+	}
 
 	owners, err := ownersAndGroups(cfg)
 	if err != nil {
@@ -327,7 +352,7 @@ func copyRecursive(cfg CopyCfg) error {
 		}
 		defer func() {
 			if err := srcFile.Close(); err != nil {
-				fmt.Printf("warning: failed to close file: %v", err)
+				_, _ = fmt.Printf("warning: failed to close file: %v", err)
 			}
 		}()
 
@@ -337,7 +362,7 @@ func copyRecursive(cfg CopyCfg) error {
 		}
 		defer func() {
 			if err := dstFile.Close(); err != nil {
-				fmt.Printf("warning: failed to close file: %v", err)
+				_, _ = fmt.Printf("warning: failed to close file: %v", err)
 			}
 		}()
 
@@ -392,4 +417,44 @@ func deploymentTypeSuffix(dt DeploymentType) string {
 		return ConfigSuffix
 	}
 	return ""
+}
+
+func checkOwned(path string) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsExist(err) {
+			return err
+		}
+		return nil
+	}
+
+	worldWritable := info.Mode()&0o02 != 0
+	groupWritable := info.Mode()&0o020 != 0
+	userWritable := info.Mode()&0o200 != 0
+
+	if worldWritable {
+		return nil
+	}
+
+	stat := info.Sys().(*syscall.Stat_t)
+
+	currentGID := uint32(os.Getgid())
+	if stat.Gid == currentGID && groupWritable {
+		return nil
+	}
+
+	currentUID := uint32(os.Getuid())
+	if stat.Uid == currentUID && userWritable {
+		return nil
+	}
+	return fmt.Errorf("you don't own %s (owner: %d, you: %d)", path, stat.Uid, currentUID)
+}
+
+func checkDeployableDir(path string) error {
+	// if path doesn't exist, check parent
+	target := path
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		target = filepath.Dir(path)
+	}
+	return checkOwned(target)
 }

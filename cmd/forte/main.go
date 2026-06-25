@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"time"
 
 	"github.com/ericfortmeyer/forte/internal/archive"
 	"github.com/ericfortmeyer/forte/internal/deploy"
@@ -26,8 +27,8 @@ type userValidator func(username string) (*user.User, error)
 
 type archiveProxy struct{}
 
-func (a archiveProxy) Extract(tarGzPath string, destDir string) error {
-	return archive.Extract(tarGzPath, destDir)
+func (a archiveProxy) Extract(tarGzPath, destDir string, out io.Writer) error {
+	return archive.Extract(tarGzPath, destDir, out)
 }
 func (a archiveProxy) IsSkippable(err error) bool { return archive.IsSkippable(err) }
 
@@ -37,8 +38,8 @@ func (d deployProxy) ResolveSrc(srcRoot string, appName string) ([]deploy.Deploy
 	return deploy.ResolveSrc(srcRoot, appName)
 }
 
-func (d deployProxy) Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc) error {
-	return deploy.Deploy(cfg, cleanup)
+func (d deployProxy) Deploy(cfg deploy.DeployConfig, cleanup deploy.CleanupFunc, out io.Writer) error {
+	return deploy.Deploy(cfg, cleanup, out)
 }
 
 func main() {
@@ -74,6 +75,8 @@ func Run(
 
 	switch cmd {
 	case deploy.Command:
+		start := time.Now()
+
 		if len(args) < 2 {
 			_, _ = fmt.Fprintln(out, ui.Error("Application name required"))
 			_, _ = fmt.Fprintln(out, "") // blank line
@@ -107,7 +110,7 @@ func Run(
 		for _, name := range archiveNames {
 			tarGzPath := filepath.Join(srcRoot, name+archive.TarballExt)
 			destDir := filepath.Join(srcRoot, name)
-			if err := a.Extract(tarGzPath, destDir); err != nil {
+			if err := a.Extract(tarGzPath, destDir, os.Stderr); err != nil {
 				if !a.IsSkippable(err) {
 					_, _ = fmt.Fprintln(out, ui.Error(err.Error()))
 					exit(1)
@@ -135,12 +138,14 @@ func Run(
 					SvcAssetDest:  fhs.SvcAssetDest(), // TODO: support config file / env var override in future version
 				}
 
-				if err := d.Deploy(cfg, deploy.CleanupProduction); err != nil {
+				if err := d.Deploy(cfg, deploy.CleanupProduction, out); err != nil {
 					_, _ = fmt.Fprintln(out, ui.Error(err.Error()))
 					exit(1)
 					return
 				}
 			}
+
+			_, _ = fmt.Fprintln(out, ui.Success("Total:"), time.Since(start))
 		}
 
 	case help.Command:

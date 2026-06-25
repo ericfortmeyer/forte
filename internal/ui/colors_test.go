@@ -171,7 +171,7 @@ func TestColorConstants(t *testing.T) {
 func TestOutputFormat(t *testing.T) {
 	// Verify exact format: color + symbol + reset + space + message
 	result := Success("test")
-	expected := colorGreen + checkMark + colorReset + " " + "test"
+	expected := colorGreen + checkMark + " " + "test" + colorReset
 
 	if result != expected {
 		t.Errorf("Success() format mismatch\ngot:  %q\nwant: %q", result, expected)

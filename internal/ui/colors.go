@@ -17,7 +17,7 @@ const (
 )
 
 func Success(msg string) string {
-	return colorGreen + checkMark + colorReset + " " + msg
+	return colorGreen + checkMark + " " + msg + colorReset
 }
 
 func Error(msg string) string {
@@ -25,9 +25,9 @@ func Error(msg string) string {
 }
 
 func Working(msg string) string {
-	return colorBlue + arrow + colorReset + " " + msg
+	return colorBlue + arrow + " " + msg + colorReset
 }
 
 func Warn(msg string) string {
-	return colorYellow + notice + colorReset + " " + msg
+	return colorYellow + notice + " " + msg + colorReset
 }
