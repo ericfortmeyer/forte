@@ -65,7 +65,7 @@ func Run(
 	out io.Writer,
 ) {
 	if len(args) < 1 {
-		_, _ = out.Write([]byte(help.Help()))
+		_, _ = fmt.Fprintln(out, help.Help())
 		exit(1)
 		return
 	}
@@ -75,16 +75,16 @@ func Run(
 	switch cmd {
 	case deploy.Command:
 		if len(args) < 2 {
-			fmt.Fprintln(out, ui.Error("Application name required"))
-			fmt.Fprintln(out, "") // blank line
-			fmt.Fprintln(out, deploy.Example)
+			_, _ = fmt.Fprintln(out, ui.Error("Application name required"))
+			_, _ = fmt.Fprintln(out, "") // blank line
+			_, _ = fmt.Fprintln(out, deploy.Example)
 			exit(1)
 			return
 		}
 		if len(args) < 3 {
-			fmt.Fprintln(out, ui.Error("Web service user required"))
-			fmt.Fprintln(out, "") // blank line
-			fmt.Fprintln(out, deploy.Example)
+			_, _ = fmt.Fprintln(out, ui.Error("Web service user required"))
+			_, _ = fmt.Fprintln(out, "") // blank line
+			_, _ = fmt.Fprintln(out, deploy.Example)
 			exit(1)
 			return
 		}
@@ -93,7 +93,7 @@ func Run(
 
 		validUser, err := userValidator(webServerUser)
 		if err != nil {
-			fmt.Fprintln(out, ui.Error("user not found "+webServerUser))
+			_, _ = fmt.Fprintln(out, ui.Error("user not found "+webServerUser))
 			exit(1)
 			return
 		}
@@ -109,7 +109,7 @@ func Run(
 			destDir := filepath.Join(srcRoot, name)
 			if err := a.Extract(tarGzPath, destDir); err != nil {
 				if !a.IsSkippable(err) {
-					fmt.Fprintln(out, ui.Error(err.Error()))
+					_, _ = fmt.Fprintln(out, ui.Error(err.Error()))
 					exit(1)
 					return
 				} // IsSkippable errors are silently ignored
@@ -117,7 +117,7 @@ func Run(
 		}
 
 		if deployments, err := d.ResolveSrc(srcRoot, appName); err != nil {
-			fmt.Fprintln(out, ui.Error(err.Error()))
+			_, _ = fmt.Fprintln(out, ui.Error(err.Error()))
 			exit(1)
 			return
 		} else {
@@ -136,7 +136,7 @@ func Run(
 				}
 
 				if err := d.Deploy(cfg, deploy.CleanupProduction); err != nil {
-					fmt.Fprintln(out, ui.Error(err.Error()))
+					_, _ = fmt.Fprintln(out, ui.Error(err.Error()))
 					exit(1)
 					return
 				}
@@ -144,17 +144,17 @@ func Run(
 		}
 
 	case help.Command:
-		_, _ = out.Write([]byte(help.Help()))
+		_, _ = fmt.Fprintln(out, help.Help())
 		exit(0)
 		return
 	case forteversion.Command:
-		_, _ = out.Write([]byte(forteversion.Version() + "\n"))
+		_, _ = fmt.Fprintln(out, forteversion.Version())
 		exit(0)
 		return
 	default:
-		fmt.Fprintln(out, ui.Error("forte: unknown subcommand: forte "+cmd))
-		fmt.Fprintln(out, "") // blank line
-		fmt.Fprintln(out, "Run 'forte help' for more information")
+		_, _ = fmt.Fprintln(out, ui.Error("forte: unknown subcommand: forte "+cmd))
+		_, _ = fmt.Fprintln(out, "") // blank line
+		_, _ = fmt.Fprintln(out, "Run 'forte help' for more information")
 		exit(1)
 	}
 }

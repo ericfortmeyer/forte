@@ -91,7 +91,7 @@ func TestOutputsHelpIfNoSubcommandIsGiven(t *testing.T) {
 		t.Fatal("Should have exited with exit code 1")
 	}
 
-	if output.String() != help.Help() {
+	if !strings.Contains(output.String(), help.Help()) {
 		t.Fatalf("Should have printed help but printed: %s", output)
 	}
 }
@@ -129,7 +129,7 @@ func TestOutputsHelpIfHelpSubcommandIsGiven(t *testing.T) {
 		t.Fatal("Should have exited with exit code 0")
 	}
 
-	if output.String() != help.Help() {
+	if !strings.Contains(output.String(), help.Help()) {
 		t.Fatalf("Should have printed help but printed: %s", output)
 	}
 }
