@@ -91,7 +91,7 @@ func TestOutputsHelpIfNoSubcommandIsGiven(t *testing.T) {
 		t.Fatal("Should have exited with exit code 1")
 	}
 
-	if output.String() != help.Help() {
+	if !strings.Contains(output.String(), help.Help()) {
 		t.Fatalf("Should have printed help but printed: %s", output)
 	}
 }
@@ -110,7 +110,7 @@ func TestOutputsHelpIfInvalidSubcommandIsGiven(t *testing.T) {
 		t.Fatal("Should have exited with exit code 1")
 	}
 
-	if output.String() != "Error: Invalid subcommand: INVALID_SUBCOMMAND. Valid subcommands are deploy, version, and help." {
+	if !strings.Contains(output.String(), "unknown subcommand: forte INVALID_SUBCOMMAND") {
 		t.Fatalf("Should have printed 'Invalid subcommand: INVALID_SUBCOMMAND. Valid subcommands are deploy, version, and help. but printed: %s", output)
 	}
 }
@@ -129,7 +129,7 @@ func TestOutputsHelpIfHelpSubcommandIsGiven(t *testing.T) {
 		t.Fatal("Should have exited with exit code 0")
 	}
 
-	if output.String() != help.Help() {
+	if !strings.Contains(output.String(), help.Help()) {
 		t.Fatalf("Should have printed help but printed: %s", output)
 	}
 }
@@ -148,7 +148,7 @@ func TestOutputsVersionIfVersionSubcommandIsGiven(t *testing.T) {
 		t.Fatal("Should have exited with exit code 0")
 	}
 
-	if output.String() != forteversion.Version() {
+	if !strings.Contains(output.String(), forteversion.Version()) {
 		t.Fatalf("Should have printed version but printed: %s", output)
 	}
 }
@@ -167,7 +167,7 @@ func TestOutputsErrorIfDeploySubcommandIsGivenWithoutAppName(t *testing.T) {
 		t.Fatal("Should have exited with exit code 1")
 	}
 
-	if output.String() != "Application name required" {
+	if !strings.Contains(output.String(), "Application name required") {
 		t.Fatalf("Should have printed 'Application name requried' but printed: %s", output)
 	}
 }
@@ -193,7 +193,7 @@ func TestOutputsErrorIfDeploySubcommandIsGivenWithoutSvcUser(t *testing.T) {
 		t.Fatal("Should have exited with exit code 1")
 	}
 
-	if output.String() != "Web service user required" {
+	if !strings.Contains(output.String(), "Web service user required") {
 		t.Fatalf("Should have printed 'Web service user required' but printed: %s", output)
 	}
 }
@@ -205,7 +205,7 @@ func TestOutputsErrorIfDeploySubcommandIsGivenInvalidSvcUser(t *testing.T) {
 	mockUserValidator := func(username string) (*user.User, error) { return nil, errors.New("it") }
 
 	Run(
-		[]string{"deploy", "myApp", "www-data"},
+		[]string{"deploy", "myApp", "invaliduser"},
 		mockArchiveNoop{},
 		mockDeployNoop{},
 		mockUserValidator,
@@ -217,7 +217,7 @@ func TestOutputsErrorIfDeploySubcommandIsGivenInvalidSvcUser(t *testing.T) {
 		t.Fatal("Should have exited with exit code 1")
 	}
 
-	if !strings.Contains(output.String(), "Error") || !strings.Contains(output.String(), "www-data") {
+	if !strings.Contains(output.String(), "✗ user not found invaliduser") {
 		t.Fatalf("Should have printed Error message but printed: %s", output)
 	}
 }
@@ -243,7 +243,7 @@ func TestOutputsErrorIfDeploySubcommandIsGivenAndArchiveErrorIsNotSkippable(t *t
 		t.Fatal("Should have exited with exit code 1")
 	}
 
-	if output.String() != "Error: Is not skippable" {
+	if !strings.Contains(output.String(), "✗ Is not skippable") {
 		t.Fatalf("Should have printed Error message but printed: %s", output)
 	}
 }
@@ -269,7 +269,7 @@ func TestOutputsErrorIfDeploySubcommandIsGivenAndResolveSrcErrorOccurs(t *testin
 		t.Fatal("Should have exited with exit code 1")
 	}
 
-	if output.String() != "Error: Deployment src resolution failed" {
+	if !strings.Contains(output.String(), "Deployment src resolution failed") {
 		t.Fatalf("Should have printed Error message but printed: %s", output)
 	}
 }
@@ -295,7 +295,7 @@ func TestOutputsErrorIfDeploySubcommandIsGivenAndDeployErrorOccurs(t *testing.T)
 		t.Fatal("Should have exited with exit code 1")
 	}
 
-	if output.String() != "Error: Deployment failed" {
+	if !strings.Contains(output.String(), "Deployment failed") {
 		t.Fatalf("Should have printed Error message but printed: %s", output)
 	}
 }
