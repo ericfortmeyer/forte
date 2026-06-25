@@ -4,31 +4,20 @@
 
 ---
 
-## 0.2.0: Core Deployment (Current)
-
-### 0.2.0 Features
-
-- **Static Assets Deployment** – Deploy static assets via `-assets` suffix (e.g., `/tmp/<appname>-assets` → `/srv/assets/<appname>/`)
-- **Tarball Extraction** – Support `.tar.gz` archives as deployment sources
-- **Runnable Docker Examples** – PHP (CGI), Python (WSGI/Flask), and Node.js (Express) examples with Nginx configuration demonstrating the FHS layout
-
-### 0.2.0 Why This Matters
-
-These features validate the core deployment model for web applications across multiple runtimes. Docker examples serve as end-to-end integration tests (via GitHub Actions healthchecks) and operational templates.
-
----
-
 ## 0.3.0: Developer Experience
 
 ### 0.3.0 Features
 
-- **`--dry-run` Mode** – Preview deployment changes without applying them
 - **Enhanced Documentation** – FHS rationale, web server templates (Apache, Caddy), framework-specific guides
 - **Additional Examples** – Ruby (Rack), Java, and other common runtimes
 
 ### 0.3.0 Why This Matters
 
-Operators need confidence in what `forte` will do before execution. Dry-run mode and clearer docs reduce deployment anxiety.
+Operators need confidence in what `forte` will do before execution. Mutli-langauge example deployments and clearer docs reduce deployment anxiety.
+
+#### Dry Run Deferred
+
+Safety through reliability, not simulation. 0.3.0 focuses on bulletproof deployment and clear feedback rather than preview modes. Once real users report specific pain points, feature requests will be weighted against the core philosophy.
 
 ---
 
@@ -49,6 +38,7 @@ Package managers are the standard distribution mechanism for production tools. B
 
 The following features are deferred until broader adoption and operator feedback:
 
+- **Dry Run** – Safety through reliability, not simulation.
 - **Mapping Flexibility** – Allow operators to customize destination paths (deferred until 5+ active users)
 - **Permissions Sync** – Re-apply file permissions/ownership on redeploy
 - **Cleanup & Archival** – Automated cleanup of old deployments and version history
@@ -58,8 +48,14 @@ The following features are deferred until broader adoption and operator feedback
 
 ## Current Status
 
-**Version:** 0.1.0
-**Support:** Static sites and CGI-based deployments (e.g., PHP)
+**Version:** 0.2.0
+**Support:** Static sites, CGI-based, and runtime dependent deployments (e.g., PHP)
+
+- Java
+- NodeJS
+- PHP
+- Python
+- Ruby (Rake)
 
 | Source | Destination |
 | -------- | ------------- |
