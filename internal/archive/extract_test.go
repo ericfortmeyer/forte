@@ -607,7 +607,7 @@ func TestExtract_InvalidGzipMagic(t *testing.T) {
 
 	// Create file with wrong magic bytes
 	fakePath := filepath.Join(srcDir, "fake.tar.gz")
-	os.WriteFile(fakePath, []byte{0xFF, 0xD8}, 0644) // JPEG magic bytes
+	_ = os.WriteFile(fakePath, []byte{0xFF, 0xD8}, 0644) // JPEG magic bytes
 
 	err := Extract(fakePath, destDir)
 	if !IsSkippable(err) {
@@ -621,7 +621,7 @@ func TestExtract_GzipCorruption(t *testing.T) {
 
 	// Valid magic bytes but corrupted data
 	corruptPath := filepath.Join(srcDir, "corrupt.tar.gz")
-	os.WriteFile(corruptPath, []byte{0x1f, 0x8b, 0xFF, 0xFF, 0xFF}, 0644)
+	_ = os.WriteFile(corruptPath, []byte{0x1f, 0x8b, 0xFF, 0xFF, 0xFF}, 0644)
 
 	err := Extract(corruptPath, destDir)
 	if err == nil {
@@ -637,9 +637,9 @@ func TestExtract_TarCorruption(t *testing.T) {
 	tarPath := filepath.Join(srcDir, "corrupt.tar.gz")
 	file, _ := os.Create(tarPath)
 	gzWriter := gzip.NewWriter(file)
-	gzWriter.Write([]byte("this is not valid tar data"))
-	gzWriter.Close()
-	file.Close()
+	_, _ = gzWriter.Write([]byte("this is not valid tar data"))
+	_ = gzWriter.Close()
+	_ = file.Close()
 
 	err := Extract(tarPath, destDir)
 	if err == nil {
