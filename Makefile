@@ -1,9 +1,14 @@
-.PHONY: build run clean test fmt vet lint docker-build docker-integration-test forte-example-build example-php-deployment example-python-deployment example-nodejs-deployment example-ruby-deployment
+.PHONY: build install run clean test fmt vet lint docker-build docker-integration-tests docker-integration-tests-build forte-example-build example-php-deployment example-python-deployment example-nodejs-deployment example-ruby-deployment
 
 VERSION = $(shell grep -oE 'version = "[^"]+"' .cz.toml | cut -d'"' -f2 || echo "0.0.0")
+CGO_ENABLED = 0
 
 build:
 	go build -ldflags "-X github.com/ericfortmeyer/forte/internal/version.version=$(VERSION)" -o bin/forte ./cmd/forte
+	@chmod 0755 ./bin/forte
+
+install:
+	@cp ./bin/forte /usr/local/bin/forte
 
 run: build
 	./bin/forte
@@ -27,14 +32,16 @@ lint: fmt vet
 	@echo "\033[0;32mLinting passed\033[0m"
 
 docker-build:
-	docker build -qt forte:$(VERSION) .
+	docker build --build-arg FORTEVERSION=$(VERSION) -t forte:$(VERSION) .
 
-docker-integration-test: build docker-build
+docker-integration-tests-build:
+	docker build -qt forte-integration-tests:$(VERSION) -f ./integration_tests/Dockerfile .
+
+docker-integration-tests: build docker-integration-tests-build
 	docker run --rm \
 		-v $(shell pwd)/bin/forte:/usr/local/bin/forte \
-		-v $(shell pwd):/usr/local/src \
-		forte:$(VERSION) \
-		bats -rpx ./integration_tests/
+		-v $(shell pwd)/integration_tests:/usr/local/src/integration_tests \
+		forte-integration-tests:$(VERSION)
 
 forte-example-build: build
 	@echo "\033[1;33mBuilding forte build image...\033[0m"
