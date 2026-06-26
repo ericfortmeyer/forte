@@ -1,7 +1,18 @@
-FROM ubuntu:24.04
+FROM golang:1.25-alpine AS fortebuilder
 
-ENV TERM=xterm
+ARG FORTEVERSION
 
-RUN apt-get update && apt-get install -y bats
+WORKDIR /build
+COPY cmd/ cmd/
+COPY internal/ internal/
+COPY go.mod ./
+RUN go build \
+    -ldflags "-X github.com/ericfortmeyer/forte/internal/version.version=${FORTEVERSION}" \
+    -o bin/forte \
+    ./cmd/forte
 
-WORKDIR /usr/local/src
+FROM scratch
+
+COPY --from=fortebuilder --chmod=0755 /build/bin/forte /usr/local/bin/forte
+
+ENTRYPOINT ["/usr/local/bin/forte"]

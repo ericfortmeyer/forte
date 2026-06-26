@@ -58,6 +58,9 @@ jobs:
         with:
           go-version: "1.24"
 
+      - name: Java App Deployment
+        run: make -s example-java-deployment
+
       - name: PHP App Deployment
         run: make -s example-php-deployment
 
@@ -66,3 +69,6 @@ jobs:
 
       - name: NodeJS App Deployment
         run: make -s example-nodejs-deployment
+
+      - name: Ruby (Rake) App Deployment
+        run: make -s example-ruby-deployment

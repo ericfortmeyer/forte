@@ -3,7 +3,7 @@
 setup_file() {
     cp -r ./integration_tests/testdata/fake_app-assets /tmp/fake_app-assets
 
-    ./bin/forte deploy fake_app "www-data" || exit 1
+    forte deploy fake_app "www-data"
 }
 
 @test "forte performs FHS compliant service assets installations" {

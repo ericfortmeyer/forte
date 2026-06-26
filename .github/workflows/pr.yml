@@ -22,9 +22,12 @@ jobs:
           apt-get install -y bats
 
       - name: Build forte
-        run: make build
+        run: make -s build
         env:
           GOFLAGS: -buildvcs=false
+          CGO_ENABLED: 0
+      - name: Install forte
+        run: make -s install
 
       - name: Run integration tests
         run: bats -r ./integration_tests
