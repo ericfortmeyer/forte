@@ -69,6 +69,16 @@ Behavior summary:
 - Tarball deployment sources is supported and permissions and ownership are preserved.
 - Binaries released for amd64 and arm64 as GitHub artifacts.
 
+## Contributing & Design Discussion
+
+Forte is under active development. If you're interested in the design direction, check out our open [design discussions](https://github.com/ericfortmeyer/forte/issues/46).
+
+**Feedback welcome** on:
+
+- Configuration path flexibility
+- Default source location best practices
+- Log output formatting
+
 ## Guarantees and current limitations
 
 - Idempotence: deployments are idempotent. Forte skips source files that are older than the corresponding destination files.
@@ -86,6 +96,16 @@ Behavior summary:
 - Forte expects source directories under /tmp. Ensure your CI or build step places the app at `/tmp/<app>` and config at `/tmp/<app>-config` before running deploy.
 - If files are not updated, confirm the source file timestamp is newer than the destination. Permission-only changes are a known issue.
 - If SELinux or permissions block the service, check contexts and ownership after deploy; fixes may be needed until permission-update behavior is addressed.
+
+### About /tmp as the default source location
+
+Forte expects source files in `/tmp/<app>` because:
+
+- It's a standard FHS location for ephemeral build artifacts
+- Most CI/CD pipelines naturally place build outputs there
+- It forces cleanup discipline (don't leave production code in /tmp)
+
+**Caveat:** If you're deploying sensitive files or need persistent staging, you may want to use a custom pipeline step to stage to another location. Future versions will support non-/tmp sources.
 
 ## Roadmap & investigations
 

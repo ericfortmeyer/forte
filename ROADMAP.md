@@ -27,6 +27,12 @@ The following features are deferred until broader adoption and operator feedback
 - **Cleanup & Archival** – Automated cleanup of old deployments and version history
 - **Transactional Deploys** – Atomic swaps and rollback support
 
+### Planned: Improve mapping flexibility
+
+- Support custom source directories (non-/tmp)
+- Support custom destination paths (e.g., /etc/php/X.X/fpm)
+- Use case: applications with deeply nested config hierarchies
+
 ---
 
 ## Why is dry run deferred?
